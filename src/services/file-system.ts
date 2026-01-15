@@ -1,5 +1,6 @@
 import type { FileSystemNode, ViewerType } from '../types/index.js';
 import { loadContentFileSystem } from '../content-loader.js';
+import { EVENTS } from '../constants.js';
 
 class FileSystemService {
   private static instance: FileSystemService;
@@ -23,7 +24,7 @@ class FileSystemService {
       this.nodes.set(node.id, node);
       this.pathIndex.set(node.path, node.id);
     }
-    this.emit('filesystem-changed');
+    this.emit(EVENTS.FILESYSTEM_CHANGED);
   }
 
   private emit(eventName: string, detail?: unknown): void {

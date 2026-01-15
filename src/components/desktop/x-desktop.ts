@@ -6,6 +6,8 @@ import { windowManager } from '../../services/window-manager.js';
 import { openNode, openNodeById } from '../../services/file-opener.js';
 import { getDesktopMenuItems, APP_REGISTRY } from '../../data/app-registry.js';
 import { getNodeIcon } from '../../data/file-icons.js';
+import { DESKTOP_ICON, TASKBAR, TIMING } from '../../constants.js';
+import { isMobile } from '../../utils/device.js';
 import './x-desktop-icon.js';
 import './x-taskbar.js';
 import '../window/x-window-container.js';
@@ -102,45 +104,56 @@ export class XDesktop extends LitElement {
     
     // Open startup windows
     setTimeout(() => {
-      const isMobile = window.innerWidth < 768;
-      
-      const clockWindow = windowManager.openWindow('clock', {});
-      if (isMobile) {
-        // Mobile: smaller clock, top center
-        windowManager.moveWindow(clockWindow.id, 10, 10);
-        windowManager.resizeWindow(clockWindow.id, 180, 220);
-      } else {
-        // Desktop: top-left corner
-        windowManager.moveWindow(clockWindow.id, 50, 50);
-      }
+      this.openStartupWindows(hasDeepLink);
+    }, TIMING.STARTUP_DELAY);
+  }
 
-      // Only open xeyes on desktop (doesn't work well on mobile/touch)
-      if (!isMobile) {
-        const eyesWindow = windowManager.openWindow('xeyes', {});
-        windowManager.moveWindow(eyesWindow.id, 50, 320);
-      }
-      
-      // Only open about file on startup if there's no deep link
-      if (!hasDeepLink) {
-        const aboutNode = fileSystemService.getNode('/about.txt');
-        const readmeWindow = windowManager.openWindow('text-viewer', {
-          path: aboutNode?.path || '/about.txt',
-          name: aboutNode?.name || 'about.txt',
-          content: aboutNode?.content || 'Welcome! Right-click to open apps.',
-        });
-        
-        if (isMobile) {
-          // Mobile: full width, below clock with more space
-          const mobileWidth = Math.min(window.innerWidth - 20, 350);
-          const mobileHeight = Math.min(window.innerHeight - 320, 350);
-          windowManager.moveWindow(readmeWindow.id, 10, 280);
-          windowManager.resizeWindow(readmeWindow.id, mobileWidth, mobileHeight);
-        } else {
-          // Desktop: to the right of the clock with more vertical space
-          windowManager.moveWindow(readmeWindow.id, 280, 120);
-        }
-      }
-    }, 100);
+  /**
+   * Open initial windows on startup - extracted for clarity
+   */
+  private openStartupWindows(hasDeepLink: boolean): void {
+    const mobile = isMobile();
+    
+    // Clock window
+    const clockWindow = windowManager.openWindow('clock', {});
+    if (mobile) {
+      windowManager.moveWindow(clockWindow.id, 10, 10);
+      windowManager.resizeWindow(clockWindow.id, 180, 220);
+    } else {
+      windowManager.moveWindow(clockWindow.id, 50, 50);
+    }
+
+    // XEyes - desktop only (doesn't work well on mobile/touch)
+    if (!mobile) {
+      const eyesWindow = windowManager.openWindow('xeyes', {});
+      windowManager.moveWindow(eyesWindow.id, 50, 320);
+    }
+    
+    // About file - only if no deep link
+    if (!hasDeepLink) {
+      this.openAboutWindow(mobile);
+    }
+  }
+
+  /**
+   * Open the about/welcome window
+   */
+  private openAboutWindow(mobile: boolean): void {
+    const aboutNode = fileSystemService.getNode('/about.txt');
+    const readmeWindow = windowManager.openWindow('text-viewer', {
+      path: aboutNode?.path || '/about.txt',
+      name: aboutNode?.name || 'about.txt',
+      content: aboutNode?.content || 'Welcome! Right-click to open apps.',
+    });
+    
+    if (mobile) {
+      const mobileWidth = Math.min(window.innerWidth - 20, 350);
+      const mobileHeight = Math.min(window.innerHeight - 320, 350);
+      windowManager.moveWindow(readmeWindow.id, 10, 280);
+      windowManager.resizeWindow(readmeWindow.id, mobileWidth, mobileHeight);
+    } else {
+      windowManager.moveWindow(readmeWindow.id, 280, 120);
+    }
   }
 
   /**
@@ -174,7 +187,7 @@ export class XDesktop extends LitElement {
     // Open the file/folder after a short delay to let the desktop initialize
     setTimeout(() => {
       openNode(node);
-    }, 150);
+    }, TIMING.DEEP_LINK_DELAY);
     
     return true;
   }
@@ -194,7 +207,7 @@ export class XDesktop extends LitElement {
     // Adjust windows to stay within bounds
     const windows = windowManager.getWindows();
     const maxX = window.innerWidth;
-    const maxY = window.innerHeight - 30; // Account for taskbar
+    const maxY = window.innerHeight - TASKBAR.HEIGHT;
     
     windows.forEach(win => {
       let needsMove = false;
@@ -250,17 +263,16 @@ export class XDesktop extends LitElement {
   }
 
   private calculateIconPositions(): void {
-    const isMobile = window.innerWidth < 768;
-    const iconWidth = isMobile ? 70 : 80;
-    const iconHeight = isMobile ? 70 : 75;
-    const paddingRight = isMobile ? 10 : 20;
-    const paddingTop = isMobile ? 10 : 20;
-    const taskbarHeight = 30;
+    const mobile = isMobile();
+    const iconWidth = mobile ? DESKTOP_ICON.WIDTH_MOBILE : DESKTOP_ICON.WIDTH;
+    const iconHeight = mobile ? DESKTOP_ICON.HEIGHT_MOBILE : DESKTOP_ICON.HEIGHT;
+    const paddingRight = mobile ? DESKTOP_ICON.PADDING_RIGHT_MOBILE : DESKTOP_ICON.PADDING_RIGHT;
+    const paddingTop = mobile ? DESKTOP_ICON.PADDING_TOP_MOBILE : DESKTOP_ICON.PADDING_TOP;
     
     // Start from top-right, flow down then to the left
     const startX = window.innerWidth - iconWidth - paddingRight;
     const startY = paddingTop;
-    const maxHeight = window.innerHeight - taskbarHeight - paddingTop;
+    const maxHeight = window.innerHeight - TASKBAR.HEIGHT - paddingTop;
 
     let currentX = startX;
     let currentY = startY;

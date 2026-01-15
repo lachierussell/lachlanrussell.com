@@ -3,6 +3,7 @@ import type { TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import type { WindowState, AppType } from '../../types/index.js';
 import { windowManager } from '../../services/window-manager.js';
+import { EVENTS } from '../../constants.js';
 import './x-window.js';
 
 // Import all app components
@@ -84,12 +85,12 @@ export class XWindowContainer extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     this.updateWindows();
-    window.addEventListener('windows-changed', this.handleWindowsChanged);
+    window.addEventListener(EVENTS.WINDOWS_CHANGED, this.handleWindowsChanged);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    window.removeEventListener('windows-changed', this.handleWindowsChanged);
+    window.removeEventListener(EVENTS.WINDOWS_CHANGED, this.handleWindowsChanged);
   }
 
   private handleWindowsChanged = (): void => {

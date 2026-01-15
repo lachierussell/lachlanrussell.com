@@ -2,6 +2,7 @@ import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import type { WindowState } from '../../types/index.js';
 import { windowManager } from '../../services/window-manager.js';
+import { EVENTS, TIMING } from '../../constants.js';
 
 @customElement('x-taskbar')
 export class XTaskbar extends LitElement {
@@ -117,13 +118,13 @@ export class XTaskbar extends LitElement {
     super.connectedCallback();
     this.updateWindows();
     this.updateTime();
-    window.addEventListener('windows-changed', this.handleWindowsChanged);
-    this.timeInterval = window.setInterval(() => this.updateTime(), 1000);
+    window.addEventListener(EVENTS.WINDOWS_CHANGED, this.handleWindowsChanged);
+    this.timeInterval = window.setInterval(() => this.updateTime(), TIMING.CLOCK_INTERVAL);
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback();
-    window.removeEventListener('windows-changed', this.handleWindowsChanged);
+    window.removeEventListener(EVENTS.WINDOWS_CHANGED, this.handleWindowsChanged);
     if (this.timeInterval) {
       clearInterval(this.timeInterval);
     }

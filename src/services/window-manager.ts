@@ -1,5 +1,7 @@
 import type { WindowState, AppType, WindowEventDetail } from '../types/index.js';
 import { getDefaultSize, getAppIcon, getAppTitle } from '../data/app-registry.js';
+import { WINDOW, TASKBAR, EVENTS } from '../constants.js';
+import { constrainBounds, snapPosition, snapResize } from '../utils/geometry.js';
 
 class WindowManagerService {
   private static instance: WindowManagerService;
@@ -8,7 +10,7 @@ class WindowManagerService {
   focusedWindowId: string | null = null;
   
   private nextWindowId = 1;
-  private nextZIndex = 100;
+  private nextZIndex = WINDOW.BASE_Z_INDEX;
   private cascadeOffset = 0;
   private basePath: string = import.meta.env.BASE_URL || '/';
 
@@ -34,13 +36,8 @@ class WindowManagerService {
   }
 
   private getCascadePosition(): { x: number; y: number } {
-    const baseX = 50;
-    const baseY = 50;
-    const offset = 30;
-    const maxCascade = 10;
-
-    const x = baseX + (this.cascadeOffset % maxCascade) * offset;
-    const y = baseY + (this.cascadeOffset % maxCascade) * offset;
+    const x = WINDOW.INITIAL_OFFSET_X + (this.cascadeOffset % WINDOW.CASCADE_MAX) * WINDOW.CASCADE_OFFSET;
+    const y = WINDOW.INITIAL_OFFSET_Y + (this.cascadeOffset % WINDOW.CASCADE_MAX) * WINDOW.CASCADE_OFFSET;
     
     this.cascadeOffset++;
     
@@ -52,31 +49,23 @@ class WindowManagerService {
     const position = this.getCascadePosition();
     const size = getDefaultSize(appType);
     
-    // Get viewport dimensions
-    const viewportWidth = globalThis.innerWidth;
-    const viewportHeight = globalThis.innerHeight;
-    const taskbarHeight = 30;
-    const padding = 10;
-    
-    // Constrain window size to fit viewport
-    const maxWidth = viewportWidth - padding * 2;
-    const maxHeight = viewportHeight - taskbarHeight - padding * 2;
-    
-    const constrainedWidth = Math.min(size.width, maxWidth);
-    const constrainedHeight = Math.min(size.height, maxHeight);
-    
-    // Constrain position to keep window visible
-    const constrainedX = Math.min(position.x, viewportWidth - constrainedWidth - padding);
-    const constrainedY = Math.min(position.y, viewportHeight - taskbarHeight - constrainedHeight - padding);
+    // Constrain window to fit viewport using geometry utilities
+    const screenHeight = globalThis.innerHeight - TASKBAR.HEIGHT;
+    const constrained = constrainBounds(
+      { x: position.x, y: position.y, width: size.width, height: size.height },
+      globalThis.innerWidth,
+      screenHeight,
+      WINDOW.PADDING
+    );
     
     const windowState: WindowState = {
       id,
       title: getAppTitle(appType, appData),
       icon: getAppIcon(appType),
-      x: Math.max(padding, constrainedX),
-      y: Math.max(padding, constrainedY),
-      width: constrainedWidth,
-      height: constrainedHeight,
+      x: constrained.x,
+      y: constrained.y,
+      width: constrained.width,
+      height: constrained.height,
       zIndex: this.getNextZIndex(),
       isMinimized: false,
       isMaximized: false,
@@ -96,8 +85,8 @@ class WindowManagerService {
     // Update URL for deep linking when window opens
     this.updateUrlForWindow(windowState);
 
-    this.emit('window-opened', { windowId: id, window: windowState });
-    this.emit('windows-changed');
+    this.emit(EVENTS.WINDOW_OPENED, { windowId: id, window: windowState });
+    this.emit(EVENTS.WINDOWS_CHANGED);
 
     return windowState;
   }
@@ -123,8 +112,8 @@ class WindowManagerService {
       }
     }
 
-    this.emit('window-closed', { windowId: id });
-    this.emit('windows-changed');
+    this.emit(EVENTS.WINDOW_CLOSED, { windowId: id });
+    this.emit(EVENTS.WINDOWS_CHANGED);
   }
 
   /**
@@ -153,8 +142,8 @@ class WindowManagerService {
     // Update URL for deep linking
     this.updateUrlForWindow(window);
 
-    this.emit('window-focused', { windowId: id, window });
-    this.emit('windows-changed');
+    this.emit(EVENTS.WINDOW_FOCUSED, { windowId: id, window });
+    this.emit(EVENTS.WINDOWS_CHANGED);
   }
 
   /**
@@ -232,8 +221,8 @@ class WindowManagerService {
       }
     }
 
-    this.emit('window-minimized', { windowId: id, window });
-    this.emit('windows-changed');
+    this.emit(EVENTS.WINDOW_MINIMIZED, { windowId: id, window });
+    this.emit(EVENTS.WINDOWS_CHANGED);
   }
 
   maximizeWindow(id: string): void {
@@ -255,13 +244,13 @@ class WindowManagerService {
       window.x = 0;
       window.y = 0;
       window.width = globalThis.innerWidth;
-      window.height = globalThis.innerHeight - 32; // Account for taskbar
+      window.height = globalThis.innerHeight - TASKBAR.HEIGHT;
       window.isMaximized = true;
     }
 
     this.focusWindow(id);
-    this.emit('window-maximized', { windowId: id, window });
-    this.emit('windows-changed');
+    this.emit(EVENTS.WINDOW_MAXIMIZED, { windowId: id, window });
+    this.emit(EVENTS.WINDOWS_CHANGED);
   }
 
   restoreWindow(id: string): void {
@@ -284,8 +273,8 @@ class WindowManagerService {
 
     window.isMinimized = false;
     this.focusWindow(id);
-    this.emit('window-restored', { windowId: id, window });
-    this.emit('windows-changed');
+    this.emit(EVENTS.WINDOW_RESTORED, { windowId: id, window });
+    this.emit(EVENTS.WINDOWS_CHANGED);
   }
 
   toggleMaximize(id: string): void {
@@ -303,64 +292,34 @@ class WindowManagerService {
     const window = this.windows.get(id);
     if (!window || window.isMaximized) return;
 
-    // Snap to edges (within 15px)
-    const snapThreshold = 15;
-    const taskbarHeight = 28;
-    const screenWidth = globalThis.innerWidth;
-    const screenHeight = globalThis.innerHeight - taskbarHeight;
+    const screenHeight = globalThis.innerHeight - TASKBAR.HEIGHT;
+    const snapped = snapPosition(
+      x, y,
+      window.width, window.height,
+      globalThis.innerWidth, screenHeight
+    );
 
-    let snappedX = x;
-    let snappedY = y;
+    window.x = snapped.x;
+    window.y = snapped.y;
 
-    // Snap to left edge
-    if (x < snapThreshold) {
-      snappedX = 0;
-    }
-    // Snap to right edge
-    if (x + window.width > screenWidth - snapThreshold) {
-      snappedX = screenWidth - window.width;
-    }
-    // Snap to top edge
-    if (y < snapThreshold) {
-      snappedY = 0;
-    }
-    // Snap to bottom edge
-    if (y + window.height > screenHeight - snapThreshold) {
-      snappedY = screenHeight - window.height;
-    }
-
-    window.x = Math.max(0, snappedX);
-    window.y = Math.max(0, snappedY);
-
-    this.emit('windows-changed');
+    this.emit(EVENTS.WINDOWS_CHANGED);
   }
 
   resizeWindow(id: string, width: number, height: number): void {
     const window = this.windows.get(id);
     if (!window || window.isMaximized) return;
 
-    // Snap resize to screen edges
-    const snapThreshold = 15;
-    const taskbarHeight = 28;
-    const screenWidth = globalThis.innerWidth;
-    const screenHeight = globalThis.innerHeight - taskbarHeight;
+    const screenHeight = globalThis.innerHeight - TASKBAR.HEIGHT;
+    const snapped = snapResize(
+      window.x, window.y,
+      width, height,
+      globalThis.innerWidth, screenHeight
+    );
 
-    let snappedWidth = Math.max(200, width);
-    let snappedHeight = Math.max(150, height);
+    window.width = snapped.width;
+    window.height = snapped.height;
 
-    // Snap width to right edge
-    if (window.x + width > screenWidth - snapThreshold) {
-      snappedWidth = screenWidth - window.x;
-    }
-    // Snap height to bottom edge  
-    if (window.y + height > screenHeight - snapThreshold) {
-      snappedHeight = screenHeight - window.y;
-    }
-
-    window.width = snappedWidth;
-    window.height = snappedHeight;
-
-    this.emit('windows-changed');
+    this.emit(EVENTS.WINDOWS_CHANGED);
   }
 
   updateWindowTitle(id: string, title: string): void {
@@ -368,7 +327,7 @@ class WindowManagerService {
     if (!window) return;
     
     window.title = title;
-    this.emit('windows-changed');
+    this.emit(EVENTS.WINDOWS_CHANGED);
   }
 
   getWindows(): WindowState[] {
