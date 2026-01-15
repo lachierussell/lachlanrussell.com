@@ -81,6 +81,48 @@ export class XDesktop extends LitElement {
       const clockWindow = windowManager.openWindow('clock', {});
       // Position in top-left corner
       windowManager.moveWindow(clockWindow.id, 50, 50);
+      
+      // Open README on startup
+      const readmeContent = `Welcome to lachlanrussell.com
+=============================
+
+This website emulates a classic Unix desktop environment
+inspired by OpenBSD and the FVWM window manager.
+
+GETTING STARTED
+---------------
+• Right-click anywhere on the desktop to open the app menu
+• Double-click icons on the right to open files and folders
+• Drag window title bars to move windows
+• Drag window edges to resize windows
+
+AVAILABLE APPS
+--------------
+• XTerm      - Terminal emulator (try 'help' command)
+• File Manager - Browse the virtual filesystem
+• Web Browser - Browse websites (some sites may not load)
+• XClock     - Clock showing Melbourne time
+• XCalc      - Calculator
+• XEyes      - Eyes that follow your cursor
+
+KEYBOARD SHORTCUTS
+------------------
+Alt+Tab     - Cycle through windows
+Alt+F4      - Close window
+Alt+M       - Minimize window
+Alt+X       - Maximize/restore window
+Ctrl+N      - New file manager
+Escape      - Close menu / deselect
+
+Enjoy exploring!`;
+
+      const readmeWindow = windowManager.openWindow('text-viewer', {
+        path: '/readme.txt',
+        name: 'README.txt',
+        content: readmeContent,
+      });
+      // Position README to the right of the clock, slightly lower
+      windowManager.moveWindow(readmeWindow.id, 280, 100);
     }, 100);
   }
 
