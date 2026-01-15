@@ -10,6 +10,7 @@ class WindowManagerService {
   private nextWindowId = 1;
   private nextZIndex = 100;
   private cascadeOffset = 0;
+  private basePath: string = import.meta.env.BASE_URL || '/';
 
   private constructor() {}
 
@@ -92,6 +93,9 @@ class WindowManagerService {
     this.windows.set(id, windowState);
     this.focusedWindowId = id;
 
+    // Update URL for deep linking when window opens
+    this.updateUrlForWindow(windowState);
+
     this.emit('window-opened', { windowId: id, window: windowState });
     this.emit('windows-changed');
 
@@ -114,11 +118,21 @@ class WindowManagerService {
         this.focusWindow(remainingWindows[0].id);
       } else {
         this.focusedWindowId = null;
+        // Reset URL to base when no windows are open
+        this.resetUrl();
       }
     }
 
     this.emit('window-closed', { windowId: id });
     this.emit('windows-changed');
+  }
+
+  /**
+   * Reset the URL to the base path (desktop view)
+   */
+  resetUrl(): void {
+    const basePath = this.basePath.replace(/\/$/, '') || '/';
+    globalThis.history.replaceState({}, 'Desktop', basePath || '/');
   }
 
   focusWindow(id: string): void {
@@ -136,8 +150,66 @@ class WindowManagerService {
     window.isMinimized = false;
     this.focusedWindowId = id;
 
+    // Update URL for deep linking
+    this.updateUrlForWindow(window);
+
     this.emit('window-focused', { windowId: id, window });
     this.emit('windows-changed');
+  }
+
+  /**
+   * Generate a deep link URL for a window based on its content
+   * Updates browser URL without adding to history (for easy sharing)
+   */
+  private updateUrlForWindow(window: WindowState): void {
+    const path = this.getDeepLinkPath(window);
+    const fullPath = this.basePath.replace(/\/$/, '') + path;
+    
+    // Use replaceState to update URL without polluting browser history
+    globalThis.history.replaceState(
+      { windowId: window.id }, 
+      window.title, 
+      fullPath
+    );
+  }
+
+  /**
+   * Get the deep link path for a window based on its app type and data
+   * Uses direct filesystem paths for file-based content
+   */
+  private getDeepLinkPath(window: WindowState): string {
+    const { appType, appData } = window;
+
+    switch (appType) {
+      case 'file-manager':
+      case 'text-viewer':
+      case 'image-viewer': {
+        // Use the direct filesystem path
+        const path = appData?.path as string;
+        return path || '/';
+      }
+      
+      case 'terminal':
+        return '/terminal';
+      
+      case 'calculator':
+        return '/calculator';
+      
+      case 'clock':
+        return '/clock';
+      
+      case 'xeyes':
+        return '/xeyes';
+      
+      case 'browser':
+        return '/browser';
+      
+      case 'about':
+        return '/about';
+      
+      default:
+        return '/';
+    }
   }
 
   minimizeWindow(id: string): void {

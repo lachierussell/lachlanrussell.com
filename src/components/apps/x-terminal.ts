@@ -1,8 +1,11 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state, query } from 'lit/decorators.js';
+import { fileSystemService } from '../../services/file-system.js';
+import { openNode } from '../../services/file-opener.js';
+import type { FileSystemNode } from '../../types/index.js';
 
 interface TerminalLine {
-  type: 'input' | 'output';
+  type: 'input' | 'output' | 'error';
   content: string;
 }
 
@@ -16,11 +19,11 @@ export class XTerminal extends LitElement {
   @query('.terminal-content') private terminalContent!: HTMLElement;
   @query('input') private inputEl!: HTMLInputElement;
 
-  private cwd = '/home';
+  private cwd = '/';
   private env = {
     USER: 'user',
-    HOME: '/home/user',
-    HOSTNAME: 'freebsd',
+    HOME: '/',
+    HOSTNAME: 'webos',
     SHELL: '/bin/sh',
   };
 
@@ -105,9 +108,7 @@ export class XTerminal extends LitElement {
 
   private printWelcome(): void {
     this.lines = [
-      { type: 'output', content: 'FreeBSD 14.0-RELEASE (GENERIC) #0: Tue Nov 14 05:30:00 UTC 2023' },
-      { type: 'output', content: '' },
-      { type: 'output', content: 'Welcome to FreeBSD: The Power to Serve.' },
+      { type: 'output', content: 'WebOS Terminal v1.0' },
       { type: 'output', content: '' },
       { type: 'output', content: 'Type "help" for available commands.' },
       { type: 'output', content: '' },
@@ -185,19 +186,18 @@ export class XTerminal extends LitElement {
       case 'help':
         return [
           'Available commands:',
-          '  help      - Show this help message',
-          '  ls        - List directory contents',
-          '  pwd       - Print working directory',
-          '  cd        - Change directory',
-          '  cat       - Display file contents',
-          '  echo      - Display text',
-          '  whoami    - Display current user',
-          '  hostname  - Display hostname',
-          '  date      - Display current date/time',
-          '  uname     - Display system information',
-          '  clear     - Clear the terminal',
-          '  env       - Display environment variables',
-          '  fortune   - Display a random fortune',
+          '  help       - Show this help message',
+          '  ls [path]  - List directory contents',
+          '  pwd        - Print working directory',
+          '  cd <path>  - Change directory',
+          '  cat <file> - Display file contents',
+          '  open <path>- Open file or folder in viewer',
+          '  echo       - Display text',
+          '  whoami     - Display current user',
+          '  hostname   - Display hostname',
+          '  date       - Display current date/time',
+          '  clear      - Clear the terminal',
+          '  env        - Display environment variables',
           '',
         ];
 
@@ -213,6 +213,9 @@ export class XTerminal extends LitElement {
       case 'cat':
         return this.cmdCat(args);
 
+      case 'open':
+        return this.cmdOpen(args);
+
       case 'echo':
         return [args.join(' ')];
 
@@ -225,31 +228,12 @@ export class XTerminal extends LitElement {
       case 'date':
         return [new Date().toString()];
 
-      case 'uname':
-        if (args.includes('-a')) {
-          return ['FreeBSD freebsd 14.0-RELEASE FreeBSD 14.0-RELEASE #0 amd64'];
-        }
-        return ['FreeBSD'];
-
       case 'clear':
         this.lines = [];
         return [];
 
       case 'env':
         return Object.entries(this.env).map(([k, v]) => `${k}=${v}`);
-
-      case 'fortune':
-        const fortunes = [
-          '"Be conservative in what you send, liberal in what you accept." - Postel\'s Law',
-          'Today is a good day to read the manpages.',
-          'FreeBSD: The Power to Serve.',
-          'Have you checked the FreeBSD Handbook today?',
-          'ZFS: The last word in filesystems.',
-          'Jails: Containers before containers were cool.',
-          'pkg upgrade - your daily ritual.',
-          'Remember: The ports tree is your friend.',
-        ];
-        return [fortunes[Math.floor(Math.random() * fortunes.length)]];
 
       case '':
         return [];
@@ -259,52 +243,102 @@ export class XTerminal extends LitElement {
     }
   }
 
-  private cmdLs(_args: string[]): string[] {
-    // Simulated filesystem
-    const dirs: Record<string, string[]> = {
-      '/': ['bin', 'etc', 'home', 'tmp', 'usr', 'var'],
-      '/home': ['user'],
-      '/home/user': ['.profile', '.kshrc', 'Documents', 'Downloads'],
-      '/etc': ['examples', 'hosts', 'passwd', 'rc.conf'],
-    };
-    
-    const contents = dirs[this.cwd] || ['(empty)'];
-    return [contents.join('  ')];
+  /** Resolve a path argument to an absolute path */
+  private resolvePath(target: string): string {
+    if (target === '~') {
+      return this.env.HOME;
+    }
+    return fileSystemService.resolvePath(this.cwd, target);
+  }
+
+  /** Get a node from a path argument, with error handling */
+  private getNodeFromArg(pathArg: string): FileSystemNode | { error: string } {
+    const resolvedPath = this.resolvePath(pathArg);
+    const node = fileSystemService.getNode(resolvedPath);
+    if (!node) {
+      return { error: `${pathArg}: No such file or directory` };
+    }
+    return node;
+  }
+
+  private cmdLs(args: string[]): string[] {
+    const targetPath = args[0] ? this.resolvePath(args[0]) : this.cwd;
+    const node = fileSystemService.getNode(targetPath);
+
+    if (!node) {
+      return [`ls: ${args[0] || targetPath}: No such file or directory`];
+    }
+
+    if (node.type !== 'folder') {
+      return [node.name];
+    }
+
+    const children = fileSystemService.getChildren(targetPath);
+    if (children.length === 0) {
+      return ['(empty directory)'];
+    }
+
+    // Format output: folders with trailing /, sorted alphabetically
+    const items = children
+      .map(child => child.type === 'folder' ? `${child.name}/` : child.name)
+      .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+
+    return [items.join('  ')];
   }
 
   private cmdCd(args: string[]): string[] {
     const target = args[0] || this.env.HOME;
-    
-    if (target === '~') {
-      this.cwd = this.env.HOME;
-    } else if (target === '..') {
-      const parts = this.cwd.split('/').filter(Boolean);
-      parts.pop();
-      this.cwd = '/' + parts.join('/') || '/';
-    } else if (target.startsWith('/')) {
-      this.cwd = target;
-    } else {
-      this.cwd = this.cwd === '/' ? '/' + target : this.cwd + '/' + target;
+    const resolvedPath = this.resolvePath(target);
+    const node = fileSystemService.getNode(resolvedPath);
+
+    if (!node) {
+      return [`cd: ${target}: No such file or directory`];
     }
-    
+
+    if (node.type !== 'folder') {
+      return [`cd: ${target}: Not a directory`];
+    }
+
+    this.cwd = resolvedPath;
     return [];
   }
 
   private cmdCat(args: string[]): string[] {
     if (args.length === 0) {
-      return ['usage: cat file ...'];
+      return ['usage: cat <file>'];
     }
-    
-    const files: Record<string, string[]> = {
-      '.profile': ['export ENV=$HOME/.kshrc'],
-      '.kshrc': ['PS1="\\u@\\h:\\w$ "', 'alias ll="ls -la"'],
-    };
-    
-    const filename = args[0];
-    if (files[filename]) {
-      return files[filename];
+
+    const result = this.getNodeFromArg(args[0]);
+    if ('error' in result) {
+      return [`cat: ${result.error}`];
     }
-    return [`cat: ${filename}: No such file or directory`];
+
+    const node = result;
+    if (node.type === 'folder') {
+      return [`cat: ${args[0]}: Is a directory`];
+    }
+
+    if (!node.content) {
+      return [`cat: ${args[0]}: Empty file`];
+    }
+
+    // Split content into lines for display
+    return node.content.split('\n');
+  }
+
+  private cmdOpen(args: string[]): string[] {
+    if (args.length === 0) {
+      return ['usage: open <path>'];
+    }
+
+    const result = this.getNodeFromArg(args[0]);
+    if ('error' in result) {
+      return [`open: ${result.error}`];
+    }
+
+    // Use the centralized file opener service
+    openNode(result);
+    return [`Opening ${result.name}...`];
   }
 
   private scrollToBottom(): void {

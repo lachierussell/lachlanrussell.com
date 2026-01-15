@@ -1,6 +1,8 @@
 import { Router } from '@thepassle/app-tools/router.js';
 import { fileSystemService } from './file-system.js';
 import { openNode } from './file-opener.js';
+import { windowManager } from './window-manager.js';
+import type { AppType } from '../types/index.js';
 
 export interface RouteContext {
   url: URL;
@@ -13,6 +15,16 @@ declare class AppToolsRouter extends EventTarget {
   constructor(config: { routes: Array<{ path: string; title: string; render: (context: RouteContext) => unknown }> });
   navigate(path: string): void;
 }
+
+/** App routes that map URL paths to app types */
+const APP_ROUTES: Record<string, AppType> = {
+  '/terminal': 'terminal',
+  '/calculator': 'calculator',
+  '/clock': 'clock',
+  '/xeyes': 'xeyes',
+  '/browser': 'browser',
+  '/about': 'about',
+};
 
 class RouterService {
   private static instance: RouterService;
@@ -32,27 +44,18 @@ class RouterService {
             return context;
           },
         },
-        {
-          path: '/browse/*',
-          title: 'File Manager',
+        // App routes - these open standalone apps (must come before catch-all)
+        ...Object.keys(APP_ROUTES).map(routePath => ({
+          path: routePath,
+          title: routePath.slice(1).charAt(0).toUpperCase() + routePath.slice(2),
           render: (context: RouteContext) => {
             this.currentRoute = context;
-            const path = '/' + (this.stripBasePath(context.url.pathname).replace('/browse', '').replace(/^\//, '') || '');
-            this.openPath(path);
+            this.openApp(routePath);
             return context;
           },
-        },
+        })),
         {
-          path: '/view/*',
-          title: 'View File',
-          render: (context: RouteContext) => {
-            this.currentRoute = context;
-            const path = '/' + (this.stripBasePath(context.url.pathname).replace('/view', '').replace(/^\//, '') || '');
-            this.openPath(path);
-            return context;
-          },
-        },
-        {
+          // Catch-all: treat path as filesystem path
           path: '/*',
           title: 'Open Path',
           render: (context: RouteContext) => {
@@ -64,6 +67,14 @@ class RouterService {
         },
       ],
     });
+  }
+
+  /** Open a standalone app by route path */
+  private openApp(routePath: string): void {
+    const appType = APP_ROUTES[routePath];
+    if (appType) {
+      windowManager.openWindow(appType, {});
+    }
   }
 
   /**
