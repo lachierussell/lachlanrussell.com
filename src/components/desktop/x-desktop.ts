@@ -81,6 +81,10 @@ export class XDesktop extends LitElement {
       const clockWindow = windowManager.openWindow('clock', {});
       // Position in top-left corner
       windowManager.moveWindow(clockWindow.id, 50, 50);
+
+      // Open xeyes below the clock
+      const eyesWindow = windowManager.openWindow('xeyes', {});
+      windowManager.moveWindow(eyesWindow.id, 50, 320);
       
       // Open README on startup
       const readmeContent = `Welcome to lachlanrussell.com
