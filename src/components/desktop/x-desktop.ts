@@ -75,6 +75,7 @@ export class XDesktop extends LitElement {
     this.addEventListener('click', this.handleDesktopClick);
     this.addEventListener('contextmenu', this.handleContextMenu);
     document.addEventListener('keydown', this.handleKeyDown);
+    window.addEventListener('resize', this.handleResize);
     
     // Open startup windows
     setTimeout(() => {
@@ -154,7 +155,55 @@ Enjoy exploring!`;
     this.removeEventListener('click', this.handleDesktopClick);
     this.removeEventListener('contextmenu', this.handleContextMenu);
     document.removeEventListener('keydown', this.handleKeyDown);
+    window.removeEventListener('resize', this.handleResize);
   }
+
+  private handleResize = (): void => {
+    // Recalculate icon positions
+    this.calculateIconPositions();
+    
+    // Adjust windows to stay within bounds
+    const windows = windowManager.getWindows();
+    const maxX = window.innerWidth;
+    const maxY = window.innerHeight - 30; // Account for taskbar
+    
+    windows.forEach(win => {
+      let needsMove = false;
+      let newX = win.x;
+      let newY = win.y;
+      let newWidth = win.width;
+      let newHeight = win.height;
+      
+      // Ensure window fits horizontally
+      if (win.width > maxX - 20) {
+        newWidth = maxX - 20;
+        windowManager.resizeWindow(win.id, newWidth, win.height);
+      }
+      
+      // Ensure window fits vertically
+      if (win.height > maxY - 20) {
+        newHeight = maxY - 20;
+        windowManager.resizeWindow(win.id, newWidth, newHeight);
+      }
+      
+      // Ensure window is visible (at least titlebar)
+      if (win.x + win.width > maxX) {
+        newX = Math.max(0, maxX - newWidth - 10);
+        needsMove = true;
+      }
+      
+      if (win.y + 30 > maxY) { // At least titlebar visible
+        newY = Math.max(0, maxY - newHeight - 10);
+        needsMove = true;
+      }
+      
+      if (needsMove) {
+        windowManager.moveWindow(win.id, newX, newY);
+      }
+    });
+    
+    this.requestUpdate();
+  };
 
   private loadDesktopItems(): void {
     this.desktopItems = fileSystemService.getRootItems();
