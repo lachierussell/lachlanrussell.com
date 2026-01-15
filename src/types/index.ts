@@ -1,7 +1,7 @@
 // X Window System Types
 
 export type FileType = 'file' | 'folder';
-export type AppType = 'file-manager' | 'text-viewer' | 'image-viewer' | 'about' | 'clock' | 'calculator' | 'terminal' | 'xeyes';
+export type AppType = 'file-manager' | 'text-viewer' | 'image-viewer' | 'about' | 'clock' | 'calculator' | 'terminal' | 'xeyes' | 'browser';
 export type ViewerType = 'text' | 'image' | 'folder' | 'unknown';
 
 export interface FileSystemNode {

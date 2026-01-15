@@ -63,6 +63,8 @@ class WindowManagerService {
         return { width: 600, height: 400 };
       case 'xeyes':
         return { width: 220, height: 180 };
+      case 'browser':
+        return { width: 800, height: 600 };
       default:
         return { width: 400, height: 300 };
     }
@@ -86,6 +88,8 @@ class WindowManagerService {
         return '💻';
       case 'xeyes':
         return '👀';
+      case 'browser':
+        return '🌐';
       default:
         return '📋';
     }
@@ -112,6 +116,8 @@ class WindowManagerService {
         return 'xterm';
       case 'xeyes':
         return 'xeyes';
+      case 'browser':
+        return 'Web Browser';
       default:
         return 'Window';
     }

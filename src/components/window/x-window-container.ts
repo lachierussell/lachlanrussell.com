@@ -10,6 +10,7 @@ import '../apps/x-clock.js';
 import '../apps/x-calculator.js';
 import '../apps/x-terminal.js';
 import '../apps/x-eyes.js';
+import '../apps/x-browser.js';
 
 @customElement('x-window-container')
 export class XWindowContainer extends LitElement {
@@ -127,6 +128,11 @@ export class XWindowContainer extends LitElement {
 
       case 'xeyes':
         return html`<x-eyes></x-eyes>`;
+
+      case 'browser':
+        return html`<x-browser
+          .initialUrl=${(appData.url as string) || 'https://www.wikipedia.org/'}
+        ></x-browser>`;
       
       default:
         return html`<div style="padding: 16px;">Unknown application type</div>`;

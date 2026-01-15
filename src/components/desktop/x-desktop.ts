@@ -290,6 +290,7 @@ export class XDesktop extends LitElement {
       this.contextMenuItems = [
         { id: 'terminal', label: 'XTerm', icon: '💻' },
         { id: 'file-manager', label: 'File Manager', icon: '📁' },
+        { id: 'browser', label: 'Web Browser', icon: '🌐' },
         { id: 'separator-1', label: '', separator: true },
         { id: 'clock', label: 'XClock', icon: '🕐' },
         { id: 'calculator', label: 'XCalc', icon: '🔢' },
@@ -345,6 +346,9 @@ export class XDesktop extends LitElement {
         break;
       case 'xeyes':
         windowManager.openWindow('xeyes', {});
+        break;
+      case 'browser':
+        windowManager.openWindow('browser', { url: 'https://en.wikipedia.org/wiki/Main_Page' });
         break;
       case 'refresh':
         this.loadDesktopItems();
