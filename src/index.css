@@ -23,6 +23,24 @@ body {
   user-select: none;
 }
 
+/* Mobile responsive adjustments */
+@media (max-width: 767px) {
+  :root {
+    --x11-titlebar-height: 28px;
+    --x11-button-size: 18px;
+    --x11-font-size: 14px;
+    --x11-desktop-icon-width: 70px;
+  }
+}
+
+/* Touch-friendly adjustments */
+@media (pointer: coarse) {
+  :root {
+    --x11-titlebar-height: 32px;
+    --x11-button-size: 20px;
+  }
+}
+
 /* Scrollbar styling for X11 look */
 ::-webkit-scrollbar {
   width: 16px;

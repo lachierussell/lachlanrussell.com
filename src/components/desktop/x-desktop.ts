@@ -76,15 +76,25 @@ export class XDesktop extends LitElement {
     this.addEventListener('contextmenu', this.handleContextMenu);
     document.addEventListener('keydown', this.handleKeyDown);
     
-    // Open clock on startup in top-left corner
+    // Open startup windows
     setTimeout(() => {
+      const isMobile = window.innerWidth < 768;
+      
       const clockWindow = windowManager.openWindow('clock', {});
-      // Position in top-left corner
-      windowManager.moveWindow(clockWindow.id, 50, 50);
+      if (isMobile) {
+        // Mobile: smaller clock, top center
+        windowManager.moveWindow(clockWindow.id, 10, 10);
+        windowManager.resizeWindow(clockWindow.id, 180, 220);
+      } else {
+        // Desktop: top-left corner
+        windowManager.moveWindow(clockWindow.id, 50, 50);
+      }
 
-      // Open xeyes below the clock
-      const eyesWindow = windowManager.openWindow('xeyes', {});
-      windowManager.moveWindow(eyesWindow.id, 50, 320);
+      // Only open xeyes on desktop (doesn't work well on mobile/touch)
+      if (!isMobile) {
+        const eyesWindow = windowManager.openWindow('xeyes', {});
+        windowManager.moveWindow(eyesWindow.id, 50, 320);
+      }
       
       // Open README on startup
       const readmeContent = `Welcome to lachlanrussell.com
@@ -125,8 +135,17 @@ Enjoy exploring!`;
         name: 'README.txt',
         content: readmeContent,
       });
-      // Position README to the right of the clock, slightly lower
-      windowManager.moveWindow(readmeWindow.id, 280, 100);
+      
+      if (isMobile) {
+        // Mobile: full width, below clock with more space
+        const mobileWidth = Math.min(window.innerWidth - 20, 350);
+        const mobileHeight = Math.min(window.innerHeight - 320, 350);
+        windowManager.moveWindow(readmeWindow.id, 10, 280);
+        windowManager.resizeWindow(readmeWindow.id, mobileWidth, mobileHeight);
+      } else {
+        // Desktop: to the right of the clock with more vertical space
+        windowManager.moveWindow(readmeWindow.id, 280, 120);
+      }
     }, 100);
   }
 
@@ -143,10 +162,11 @@ Enjoy exploring!`;
   }
 
   private calculateIconPositions(): void {
-    const iconWidth = 80;
-    const iconHeight = 75;
-    const paddingRight = 20;
-    const paddingTop = 20;
+    const isMobile = window.innerWidth < 768;
+    const iconWidth = isMobile ? 70 : 80;
+    const iconHeight = isMobile ? 70 : 75;
+    const paddingRight = isMobile ? 10 : 20;
+    const paddingTop = isMobile ? 10 : 20;
     const taskbarHeight = 30;
     
     // Start from top-right, flow down then to the left
