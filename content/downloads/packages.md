@@ -3,19 +3,19 @@
 ## Essential Tools
 
 ```bash
-pkg_add vim git curl wget rsync
+pkg install vim git curl wget rsync
 ```
 
 ## Development
 
 ```bash
-pkg_add node python3 go rust
+pkg install node python3 go rust
 ```
 
 ## Desktop
 
 ```bash
-pkg_add firefox chromium gimp vlc
+pkg install firefox chromium gimp vlc xfce
 ```
 
 ## Tips
@@ -24,5 +24,14 @@ Always verify checksums!
 
 ```bash
 sha256 filename
-signify -Vep /etc/signify/openbsd-74-base.pub -m SHA256.sig
+```
+
+## Useful pkg Commands
+
+```bash
+pkg search <name>     # Search for packages
+pkg install <name>    # Install a package
+pkg upgrade           # Upgrade all packages
+pkg info              # List installed packages
+pkg autoremove        # Remove unused dependencies
 ```

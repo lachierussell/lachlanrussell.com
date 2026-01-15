@@ -19,9 +19,9 @@ export class XTerminal extends LitElement {
   private cwd = '/home';
   private env = {
     USER: 'user',
-    HOME: '/home',
-    HOSTNAME: 'openbsd',
-    SHELL: '/bin/ksh',
+    HOME: '/home/user',
+    HOSTNAME: 'freebsd',
+    SHELL: '/bin/sh',
   };
 
   static styles = css`
@@ -105,9 +105,9 @@ export class XTerminal extends LitElement {
 
   private printWelcome(): void {
     this.lines = [
-      { type: 'output', content: 'OpenBSD 7.4 (GENERIC.MP) #0: Mon Oct  9 14:28:54 MDT 2023' },
+      { type: 'output', content: 'FreeBSD 14.0-RELEASE (GENERIC) #0: Tue Nov 14 05:30:00 UTC 2023' },
       { type: 'output', content: '' },
-      { type: 'output', content: 'Welcome to OpenBSD: The proactively secure Unix-like operating system.' },
+      { type: 'output', content: 'Welcome to FreeBSD: The Power to Serve.' },
       { type: 'output', content: '' },
       { type: 'output', content: 'Type "help" for available commands.' },
       { type: 'output', content: '' },
@@ -227,9 +227,9 @@ export class XTerminal extends LitElement {
 
       case 'uname':
         if (args.includes('-a')) {
-          return ['OpenBSD openbsd 7.4 GENERIC.MP#0 amd64'];
+          return ['FreeBSD freebsd 14.0-RELEASE FreeBSD 14.0-RELEASE #0 amd64'];
         }
-        return ['OpenBSD'];
+        return ['FreeBSD'];
 
       case 'clear':
         this.lines = [];
@@ -242,12 +242,12 @@ export class XTerminal extends LitElement {
         const fortunes = [
           '"Be conservative in what you send, liberal in what you accept." - Postel\'s Law',
           'Today is a good day to read the manpages.',
-          'Remember: /etc/examples exists for a reason.',
-          'Languid: you have no langstrings.',
-          'PUFFER SAYS: Why are strstrsting?',
-          'OpenBSD: Free, Functional, and Secure.',
-          'Have you read your daily CVS changelog?',
-          'theo says: audit the code.',
+          'FreeBSD: The Power to Serve.',
+          'Have you checked the FreeBSD Handbook today?',
+          'ZFS: The last word in filesystems.',
+          'Jails: Containers before containers were cool.',
+          'pkg upgrade - your daily ritual.',
+          'Remember: The ports tree is your friend.',
         ];
         return [fortunes[Math.floor(Math.random() * fortunes.length)]];
 
@@ -255,7 +255,7 @@ export class XTerminal extends LitElement {
         return [];
 
       default:
-        return [`ksh: ${command}: not found`];
+        return [`sh: ${command}: not found`];
     }
   }
 

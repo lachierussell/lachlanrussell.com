@@ -1,11 +1,12 @@
 # Bookmarks
 
-## OpenBSD Resources
+## FreeBSD Resources
 
-- [OpenBSD Official](https://www.openbsd.org) - Official website
-- [Manual Pages](https://man.openbsd.org) - Online manual pages
-- [OpenBSD FAQ](https://www.openbsd.org/faq) - Frequently asked questions
-- [Undeadly](https://undeadly.org) - OpenBSD Journal
+- [FreeBSD Official](https://www.freebsd.org) - Official website
+- [FreeBSD Handbook](https://docs.freebsd.org/en/books/handbook/) - Comprehensive documentation
+- [Manual Pages](https://man.freebsd.org) - Online manual pages
+- [FreeBSD Forums](https://forums.freebsd.org) - Community forums
+- [FreeBSD Wiki](https://wiki.freebsd.org) - Community wiki
 
 ## Development
 
@@ -17,4 +18,4 @@
 
 - [Hacker News](https://news.ycombinator.com) - Tech news
 - [Lobsters](https://lobste.rs) - Computing-focused community
-- [LWN](https://lwn.net) - Linux Weekly News
+- [BSD Now](https://www.bsdnow.tv) - BSD podcast

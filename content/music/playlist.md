@@ -18,4 +18,4 @@
 
 ---
 
-*Tip: Use `aucat` for audio playback on OpenBSD!*
+*Tip: Use `mpv` or `vlc` for audio playback on FreeBSD!*

@@ -1,6 +1,6 @@
 # About This Site
 
-Welcome! This website emulates a classic Unix desktop environment inspired by **OpenBSD** and the **FVWM** window manager.
+Welcome! This website emulates a classic Unix desktop environment inspired by **FreeBSD** and the **FVWM** window manager.
 
 ## Features
 

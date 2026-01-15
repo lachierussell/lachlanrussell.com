@@ -1,19 +1,20 @@
 #!/bin/sh
 # update.sh - System update script
 
-echo "Updating OpenBSD system..."
+echo "Updating FreeBSD system..."
+
+# Update the base system
+echo "Fetching updates..."
+freebsd-update fetch install
 
 # Update packages
 echo "Updating packages..."
-pkg_add -u
-
-# Update firmware (if needed)
-echo "Checking firmware..."
-fw_update
+pkg upgrade -y
 
 # Clean package cache
 echo "Cleaning cache..."
-pkg_delete -a
+pkg clean -y
+pkg autoremove -y
 
 echo "Update complete!"
 echo "Consider rebooting if kernel was updated."

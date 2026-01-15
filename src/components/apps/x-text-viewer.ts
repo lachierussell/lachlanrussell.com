@@ -2,6 +2,7 @@ import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { marked } from 'marked';
+import { windowManager } from '../../services/window-manager.js';
 
 @customElement('x-text-viewer')
 export class XTextViewer extends LitElement {
@@ -134,10 +135,15 @@ export class XTextViewer extends LitElement {
     .markdown-content a {
       color: #0066cc;
       text-decoration: none;
+      cursor: pointer;
     }
 
     .markdown-content a:hover {
       text-decoration: underline;
+    }
+
+    .markdown-content a[href^="http"] {
+      /* External links get special styling */
     }
 
     .markdown-content blockquote {
@@ -181,6 +187,22 @@ export class XTextViewer extends LitElement {
     return this.content.split('\n').length;
   }
 
+  private handleContentClick = (e: MouseEvent): void => {
+    const target = e.target as HTMLElement;
+    const link = target.closest('a');
+    
+    if (link && link.href) {
+      const url = link.href;
+      // Check if it's an external http(s) link
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Open in embedded browser
+        windowManager.openWindow('browser', { url });
+      }
+    }
+  };
+
   private isMarkdown(): boolean {
     return this.fileName.endsWith('.md') || this.filePath.endsWith('.md');
   }
@@ -202,7 +224,7 @@ export class XTextViewer extends LitElement {
         <span class="filepath">${this.filePath}</span>
       </div>
 
-      <div class="content">
+      <div class="content" @click=${this.handleContentClick}>
         ${isMarkdown 
           ? html`<div class="markdown-content">${unsafeHTML(this.renderMarkdown())}</div>`
           : html`<pre class="text-content">${this.content}</pre>`

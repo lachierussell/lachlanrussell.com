@@ -1,6 +1,6 @@
-# Welcome to OpenBSD!
+# Welcome to FreeBSD!
 
-This site emulates the default OpenBSD FVWM desktop.
+This site emulates a classic FreeBSD FVWM desktop environment.
 
 ## Getting Started
 
@@ -14,4 +14,4 @@ This site emulates the default OpenBSD FVWM desktop.
 
 Open the terminal (xterm) and type `help` for available commands.
 
-> "OpenBSD: Only two remote holes in the default install, in a heck of a long time!"
+> "FreeBSD: The Power to Serve"

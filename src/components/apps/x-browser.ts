@@ -202,10 +202,10 @@ export class XBrowser extends LitElement {
   `;
 
   private bookmarks = [
-    { name: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Main_Page' },
-    { name: 'OpenBSD', url: 'https://www.openbsd.org/' },
+    { name: 'FreeBSD', url: 'https://www.freebsd.org/' },
+    { name: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/FreeBSD' },
     { name: 'Archive.org', url: 'https://archive.org/' },
-    { name: 'Wiby.me', url: 'https://wiby.me/' },
+    { name: 'Handbook', url: 'https://docs.freebsd.org/en/books/handbook/' },
   ];
 
   connectedCallback(): void {
