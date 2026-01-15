@@ -1,0 +1,5 @@
+[
+  { "id": "landscape", "name": "landscape.jpg", "url": "https://picsum.photos/800/600?random=1" },
+  { "id": "portrait", "name": "portrait.jpg", "url": "https://picsum.photos/600/800?random=2" },
+  { "id": "icon", "name": "icon.png", "url": "https://picsum.photos/200/200?random=3" }
+]

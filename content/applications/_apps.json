@@ -1,0 +1,8 @@
+[
+  { "id": "terminal", "name": "Terminal", "icon": "💻", "appType": "terminal" },
+  { "id": "browser", "name": "Browser", "icon": "🌐", "appType": "browser" },
+  { "id": "files", "name": "Files", "icon": "📁", "appType": "file-manager" },
+  { "id": "clock", "name": "Clock", "icon": "🕐", "appType": "clock" },
+  { "id": "calculator", "name": "Calculator", "icon": "🔢", "appType": "calculator" },
+  { "id": "eyes", "name": "Eyes", "icon": "👀", "appType": "xeyes" }
+]
