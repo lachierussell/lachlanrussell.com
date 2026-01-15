@@ -29,8 +29,12 @@ export class XDesktop extends LitElement {
       display: block;
       width: 100vw;
       height: 100vh;
+      height: 100dvh; /* Dynamic viewport height for mobile */
       overflow: hidden;
-      position: relative;
+      position: fixed;
+      top: 0;
+      left: 0;
+      touch-action: none; /* Prevent default touch behaviors */
     }
 
     .desktop {
@@ -40,6 +44,7 @@ export class XDesktop extends LitElement {
       background-color: var(--x11-bg, #708090);
       background-image: url("data:image/svg+xml,%3Csvg width='4' height='4' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='1' height='1' fill='%235a6a7a'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%235a6a7a'/%3E%3C/svg%3E");
       background-repeat: repeat;
+      overflow: hidden;
     }
 
     .icons-area {
@@ -49,6 +54,7 @@ export class XDesktop extends LitElement {
       right: 12px;
       bottom: 36px;
       pointer-events: none;
+      overflow: hidden;
     }
 
     .icons-area > * {
@@ -61,11 +67,22 @@ export class XDesktop extends LitElement {
       left: 0;
       right: 0;
       bottom: 0;
+      overflow: hidden;
     }
 
     /* FVWM doesn't have a traditional taskbar - we keep a minimal one */
     x-taskbar {
       height: 24px;
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 767px) {
+      .icons-area {
+        top: 8px;
+        left: 8px;
+        right: 8px;
+        bottom: 32px;
+      }
     }
   `;
 

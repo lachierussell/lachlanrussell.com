@@ -12,10 +12,17 @@ html, body {
   overflow: hidden;
   font-family: var(--x11-font-family, system-ui, sans-serif);
   font-size: var(--x11-font-size, 12px);
+  /* Prevent pull-to-refresh and overscroll on mobile */
+  overscroll-behavior: none;
+  /* Ensure viewport is fixed on mobile */
+  position: fixed;
+  touch-action: manipulation;
 }
 
 body {
   background: var(--x11-bg, #5f6a7d);
+  /* Prevent iOS bounce scroll */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Prevent text selection during drag operations */

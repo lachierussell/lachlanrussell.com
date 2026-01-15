@@ -128,14 +128,31 @@ class WindowManagerService {
     const position = this.getCascadePosition();
     const size = this.getDefaultSize(appType);
     
+    // Get viewport dimensions
+    const viewportWidth = globalThis.innerWidth;
+    const viewportHeight = globalThis.innerHeight;
+    const taskbarHeight = 30;
+    const padding = 10;
+    
+    // Constrain window size to fit viewport
+    const maxWidth = viewportWidth - padding * 2;
+    const maxHeight = viewportHeight - taskbarHeight - padding * 2;
+    
+    const constrainedWidth = Math.min(size.width, maxWidth);
+    const constrainedHeight = Math.min(size.height, maxHeight);
+    
+    // Constrain position to keep window visible
+    const constrainedX = Math.min(position.x, viewportWidth - constrainedWidth - padding);
+    const constrainedY = Math.min(position.y, viewportHeight - taskbarHeight - constrainedHeight - padding);
+    
     const windowState: WindowState = {
       id,
       title: this.getAppTitle(appType, appData),
       icon: this.getAppIcon(appType),
-      x: position.x,
-      y: position.y,
-      width: size.width,
-      height: size.height,
+      x: Math.max(padding, constrainedX),
+      y: Math.max(padding, constrainedY),
+      width: constrainedWidth,
+      height: constrainedHeight,
       zIndex: this.getNextZIndex(),
       isMinimized: false,
       isMaximized: false,

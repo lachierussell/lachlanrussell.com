@@ -50,6 +50,8 @@ export class XTextViewer extends LitElement {
       border-width: 1px;
       border-color: var(--x11-border-dark, #6e6e6e) var(--x11-border-light, #dcdcdc) var(--x11-border-light, #dcdcdc) var(--x11-border-dark, #6e6e6e);
       margin: 2px;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
     }
 
     .text-content {

@@ -73,6 +73,8 @@ export class XFileManager extends LitElement {
       overflow: auto;
       background: var(--x11-input-bg, #ffffff);
       align-content: start;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
     }
 
     .file-item {

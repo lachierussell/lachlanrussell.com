@@ -78,6 +78,9 @@ export class XWindow extends LitElement {
       border-style: solid;
       border-width: 1px;
       border-color: var(--x11-border-dark, #606468) var(--x11-border-light, #e0e4ec) var(--x11-border-light, #e0e4ec) var(--x11-border-dark, #606468);
+      /* Mobile scroll support */
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
     }
 
     /* Resize handles - positioned on the outer frame */

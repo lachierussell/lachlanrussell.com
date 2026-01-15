@@ -39,6 +39,8 @@ export class XTerminal extends LitElement {
       overflow-y: auto;
       padding: 8px;
       color: #00ff00;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
     }
 
     .line {
