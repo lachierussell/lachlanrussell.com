@@ -3,8 +3,9 @@
 
 import type { FileSystemNode } from './types/index.js';
 
-// Import all markdown files from content directory
+// Import all content files from content directory
 const markdownFiles = import.meta.glob('/content/**/*.md', { eager: true, query: '?raw', import: 'default' });
+const textFiles = import.meta.glob('/content/**/*.txt', { eager: true, query: '?raw', import: 'default' });
 const jsonFiles = import.meta.glob('/content/**/*.json', { eager: true, import: 'default' });
 const shellFiles = import.meta.glob('/content/**/*.sh', { eager: true, query: '?raw', import: 'default' });
 
@@ -25,6 +26,7 @@ function getIconForFile(filename: string): string {
   const ext = filename.split('.').pop()?.toLowerCase();
   switch (ext) {
     case 'md': return '📄';
+    case 'txt': return '📝';
     case 'sh': return '📜';
     case 'json': return '📋';
     case 'jpg':
@@ -138,6 +140,40 @@ export function loadContentFileSystem(): FileSystemNode[] {
     ensureFolder(folderPath);
 
     // Add to parent's children
+    const parentId = folderPath === '/' ? 'root' : parts.join('-');
+    if (!folderChildren.has(parentId)) {
+      folderChildren.set(parentId, []);
+    }
+    if (!folderChildren.get(parentId)!.includes(id)) {
+      folderChildren.get(parentId)!.push(id);
+    }
+
+    nodes.push({
+      id,
+      name: filename,
+      type: 'file',
+      path: relativePath,
+      parentId,
+      content: content as string,
+      mimeType: getMimeType(filename),
+      icon: getIconForFile(filename),
+      createdAt: now,
+      modifiedAt: now,
+    });
+  }
+
+  // Process text files
+  for (const [path, content] of Object.entries(textFiles)) {
+    const relativePath = path.replace('/content', '');
+    const parts = relativePath.split('/').filter(Boolean);
+    const filename = parts.pop()!;
+    const folderPath = parts.length > 0 ? '/' + parts.join('/') : '/';
+    const id = relativePath.replace(/\//g, '-').replace(/^-/, '').replace(/\.txt$/, '-txt');
+    
+    if (filename.startsWith('_')) continue;
+
+    ensureFolder(folderPath);
+
     const parentId = folderPath === '/' ? 'root' : parts.join('-');
     if (!folderChildren.has(parentId)) {
       folderChildren.set(parentId, []);

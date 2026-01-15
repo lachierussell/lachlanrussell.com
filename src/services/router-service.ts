@@ -18,6 +18,8 @@ class RouterService {
   private static instance: RouterService;
   private router: AppToolsRouter;
   private currentRoute: RouteContext | null = null;
+  // Base path for deployment (e.g., '/lachlanrussell.com/' for GitHub Pages)
+  private basePath: string = import.meta.env.BASE_URL || '/';
 
   private constructor() {
     this.router = new (Router as unknown as typeof AppToolsRouter)({
@@ -35,7 +37,7 @@ class RouterService {
           title: 'File Manager',
           render: (context: RouteContext) => {
             this.currentRoute = context;
-            const path = '/' + (context.url.pathname.replace('/browse', '').replace(/^\//, '') || '');
+            const path = '/' + (this.stripBasePath(context.url.pathname).replace('/browse', '').replace(/^\//, '') || '');
             this.openFileManager(path);
             return context;
           },
@@ -45,13 +47,39 @@ class RouterService {
           title: 'View File',
           render: (context: RouteContext) => {
             this.currentRoute = context;
-            const path = '/' + (context.url.pathname.replace('/view', '').replace(/^\//, '') || '');
+            const path = '/' + (this.stripBasePath(context.url.pathname).replace('/view', '').replace(/^\//, '') || '');
             this.openFileViewer(path);
+            return context;
+          },
+        },
+        {
+          path: '/*',
+          title: 'Open Path',
+          render: (context: RouteContext) => {
+            this.currentRoute = context;
+            const path = this.stripBasePath(context.url.pathname) || '/';
+            console.log('[Router] Catch-all route matched:', { 
+              pathname: context.url.pathname, 
+              strippedPath: path,
+              basePath: this.basePath 
+            });
+            this.openPath(path);
             return context;
           },
         },
       ],
     });
+  }
+
+  /**
+   * Strip the base path from a URL pathname to get the app-relative path
+   */
+  private stripBasePath(pathname: string): string {
+    const base = this.basePath.replace(/\/$/, ''); // Remove trailing slash
+    if (base && pathname.startsWith(base)) {
+      return pathname.slice(base.length) || '/';
+    }
+    return pathname;
   }
 
   static getInstance(): RouterService {
@@ -95,6 +123,28 @@ class RouterService {
       case 'folder':
         this.openFileManager(path);
         break;
+    }
+  }
+
+  private openPath(path: string): void {
+    // Normalize path - remove trailing slashes except for root
+    const normalizedPath = path === '/' ? '/' : path.replace(/\/$/, '');
+    
+    console.log('[Router] openPath called:', { path, normalizedPath });
+    
+    const node = fileSystemService.getNode(normalizedPath);
+    console.log('[Router] Node lookup result:', node ? { id: node.id, name: node.name, type: node.type } : 'NOT FOUND');
+    
+    if (!node) {
+      // Path not found - could show an error or just load desktop
+      console.warn(`Path not found: ${normalizedPath}`);
+      return;
+    }
+
+    if (node.type === 'folder') {
+      this.openFileManager(normalizedPath);
+    } else {
+      this.openFileViewer(normalizedPath);
     }
   }
 

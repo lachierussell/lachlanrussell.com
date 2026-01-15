@@ -94,6 +94,9 @@ export class XDesktop extends LitElement {
     document.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('resize', this.handleResize);
     
+    // Check if we have a deep-link URL to handle
+    const hasDeepLink = this.checkForDeepLink();
+    
     // Open startup windows
     setTimeout(() => {
       const isMobile = window.innerWidth < 768;
@@ -114,25 +117,68 @@ export class XDesktop extends LitElement {
         windowManager.moveWindow(eyesWindow.id, 50, 320);
       }
       
-      // Open README on startup - load from content system
-      const aboutNode = fileSystemService.getNode('/about.md');
-      const readmeWindow = windowManager.openWindow('text-viewer', {
-        path: aboutNode?.path || '/about.md',
-        name: aboutNode?.name || 'about.md',
-        content: aboutNode?.content || 'Welcome! Right-click to open apps.',
-      });
-      
-      if (isMobile) {
-        // Mobile: full width, below clock with more space
-        const mobileWidth = Math.min(window.innerWidth - 20, 350);
-        const mobileHeight = Math.min(window.innerHeight - 320, 350);
-        windowManager.moveWindow(readmeWindow.id, 10, 280);
-        windowManager.resizeWindow(readmeWindow.id, mobileWidth, mobileHeight);
-      } else {
-        // Desktop: to the right of the clock with more vertical space
-        windowManager.moveWindow(readmeWindow.id, 280, 120);
+      // Only open about file on startup if there's no deep link
+      if (!hasDeepLink) {
+        const aboutNode = fileSystemService.getNode('/about.txt');
+        const readmeWindow = windowManager.openWindow('text-viewer', {
+          path: aboutNode?.path || '/about.txt',
+          name: aboutNode?.name || 'about.txt',
+          content: aboutNode?.content || 'Welcome! Right-click to open apps.',
+        });
+        
+        if (isMobile) {
+          // Mobile: full width, below clock with more space
+          const mobileWidth = Math.min(window.innerWidth - 20, 350);
+          const mobileHeight = Math.min(window.innerHeight - 320, 350);
+          windowManager.moveWindow(readmeWindow.id, 10, 280);
+          windowManager.resizeWindow(readmeWindow.id, mobileWidth, mobileHeight);
+        } else {
+          // Desktop: to the right of the clock with more vertical space
+          windowManager.moveWindow(readmeWindow.id, 280, 120);
+        }
       }
     }, 100);
+  }
+
+  /**
+   * Check if the current URL is a deep link to a file/folder and handle it
+   * Returns true if a deep link was found and handled
+   */
+  private checkForDeepLink(): boolean {
+    const basePath = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+    let pathname = window.location.pathname;
+    
+    // Strip base path
+    if (basePath && pathname.startsWith(basePath)) {
+      pathname = pathname.slice(basePath.length) || '/';
+    }
+    
+    // If we're at root, no deep link
+    if (pathname === '/' || pathname === '') {
+      return false;
+    }
+
+    // Normalize path - remove trailing slashes except for root
+    const normalizedPath = pathname === '/' ? '/' : pathname.replace(/\/$/, '');
+    
+    console.log('[DeepLink] Checking path:', normalizedPath);
+    
+    // Look up the node directly
+    const node = fileSystemService.getNode(normalizedPath);
+    
+    if (!node) {
+      console.warn('[DeepLink] Path not found:', normalizedPath);
+      return false;
+    }
+
+    console.log('[DeepLink] Found node:', node.name, node.type);
+
+    // Open the file/folder after a short delay to let the desktop initialize
+    setTimeout(() => {
+      this.openNode(node);
+    }, 150);
+    
+    return true;
   }
 
   disconnectedCallback(): void {
