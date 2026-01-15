@@ -1,8 +1,11 @@
 import { LitElement, html, css } from 'lit';
+import type { TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import type { WindowState, AppType } from '../../types/index.js';
 import { windowManager } from '../../services/window-manager.js';
 import './x-window.js';
+
+// Import all app components
 import '../apps/x-file-manager.js';
 import '../apps/x-text-viewer.js';
 import '../apps/x-image-viewer.js';
@@ -11,6 +14,51 @@ import '../apps/x-calculator.js';
 import '../apps/x-terminal.js';
 import '../apps/x-eyes.js';
 import '../apps/x-browser.js';
+
+/**
+ * App content renderers - maps app types to their render functions
+ * This is declarative and driven by the app registry
+ */
+type AppRenderer = (win: WindowState) => TemplateResult;
+
+const APP_RENDERERS: Record<AppType, AppRenderer> = {
+  'file-manager': (win) => html`
+    <x-file-manager 
+      .currentPath=${(win.appData?.path as string) || '/'}
+      .windowId=${win.id}
+    ></x-file-manager>`,
+  
+  'text-viewer': (win) => html`
+    <x-text-viewer
+      .filePath=${(win.appData?.path as string) || ''}
+      .fileName=${(win.appData?.name as string) || 'Untitled'}
+      .content=${(win.appData?.content as string) || ''}
+    ></x-text-viewer>`,
+  
+  'image-viewer': (win) => html`
+    <x-image-viewer
+      .filePath=${(win.appData?.path as string) || ''}
+      .fileName=${(win.appData?.name as string) || 'Image'}
+      .src=${(win.appData?.src as string) || ''}
+    ></x-image-viewer>`,
+  
+  'about': (win) => html`
+    <x-text-viewer
+      .filePath="/about"
+      .fileName="About"
+      .content=${(win.appData?.content as string) || 'About this website'}
+    ></x-text-viewer>`,
+
+  'clock': () => html`<x-clock></x-clock>`,
+  'calculator': () => html`<x-calculator></x-calculator>`,
+  'terminal': () => html`<x-terminal></x-terminal>`,
+  'xeyes': () => html`<x-eyes></x-eyes>`,
+  
+  'browser': (win) => html`
+    <x-browser
+      .initialUrl=${(win.appData?.url as string) || 'https://www.wikipedia.org/'}
+    ></x-browser>`,
+};
 
 @customElement('x-window-container')
 export class XWindowContainer extends LitElement {
@@ -53,8 +101,7 @@ export class XWindowContainer extends LitElement {
   }
 
   private handleWindowFocus(e: CustomEvent): void {
-    const { windowId } = e.detail;
-    windowManager.focusWindow(windowId);
+    windowManager.focusWindow(e.detail.windowId);
   }
 
   private handleWindowMove(e: CustomEvent): void {
@@ -64,89 +111,36 @@ export class XWindowContainer extends LitElement {
 
   private handleWindowResize(e: CustomEvent): void {
     const { windowId, width, height, x, y } = e.detail;
-    // Only move if x or y changed (resizing from north or west edges)
-    if (x !== undefined) {
-      const win = windowManager.getWindow(windowId);
-      if (win) {
-        windowManager.moveWindow(windowId, x, win.y);
-      }
-    }
-    if (y !== undefined) {
-      const win = windowManager.getWindow(windowId);
-      if (win) {
-        windowManager.moveWindow(windowId, win.x, y);
-      }
+    const win = windowManager.getWindow(windowId);
+    if (!win) return;
+
+    // Handle position changes from north/west edge resizing
+    if (x !== undefined || y !== undefined) {
+      windowManager.moveWindow(windowId, x ?? win.x, y ?? win.y);
     }
     windowManager.resizeWindow(windowId, width, height);
   }
 
   private handleWindowMinimize(e: CustomEvent): void {
-    const { windowId } = e.detail;
-    windowManager.minimizeWindow(windowId);
+    windowManager.minimizeWindow(e.detail.windowId);
   }
 
   private handleWindowMaximize(e: CustomEvent): void {
-    const { windowId } = e.detail;
-    windowManager.toggleMaximize(windowId);
+    windowManager.toggleMaximize(e.detail.windowId);
   }
 
   private handleWindowClose(e: CustomEvent): void {
-    const { windowId } = e.detail;
-    windowManager.closeWindow(windowId);
+    windowManager.closeWindow(e.detail.windowId);
   }
 
-  private renderAppContent(win: WindowState) {
-    const appType = win.appType as AppType;
-    const appData = win.appData || {};
-
-    switch (appType) {
-      case 'file-manager':
-        return html`<x-file-manager 
-          .currentPath=${(appData.path as string) || '/'}
-          .windowId=${win.id}
-        ></x-file-manager>`;
-      
-      case 'text-viewer':
-        return html`<x-text-viewer
-          .filePath=${(appData.path as string) || ''}
-          .fileName=${(appData.name as string) || 'Untitled'}
-          .content=${(appData.content as string) || ''}
-        ></x-text-viewer>`;
-      
-      case 'image-viewer':
-        return html`<x-image-viewer
-          .filePath=${(appData.path as string) || ''}
-          .fileName=${(appData.name as string) || 'Image'}
-          .src=${(appData.src as string) || ''}
-        ></x-image-viewer>`;
-      
-      case 'about':
-        return html`<x-text-viewer
-          .filePath="/about"
-          .fileName="About"
-          .content=${(appData.content as string) || 'About this website'}
-        ></x-text-viewer>`;
-
-      case 'clock':
-        return html`<x-clock></x-clock>`;
-
-      case 'calculator':
-        return html`<x-calculator></x-calculator>`;
-
-      case 'terminal':
-        return html`<x-terminal></x-terminal>`;
-
-      case 'xeyes':
-        return html`<x-eyes></x-eyes>`;
-
-      case 'browser':
-        return html`<x-browser
-          .initialUrl=${(appData.url as string) || 'https://www.wikipedia.org/'}
-        ></x-browser>`;
-      
-      default:
-        return html`<div style="padding: 16px;">Unknown application type</div>`;
+  /** Render app content using the declarative renderer map */
+  private renderAppContent(win: WindowState): TemplateResult {
+    const renderer = APP_RENDERERS[win.appType];
+    if (renderer) {
+      return renderer(win);
     }
+    // Fallback for unknown app types
+    return html`<div style="padding: 16px;">Unknown application: ${win.appType}</div>`;
   }
 
   render() {

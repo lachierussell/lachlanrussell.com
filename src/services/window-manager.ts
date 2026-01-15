@@ -1,4 +1,5 @@
 import type { WindowState, AppType, WindowEventDetail } from '../types/index.js';
+import { getDefaultSize, getAppIcon, getAppTitle } from '../data/app-registry.js';
 
 class WindowManagerService {
   private static instance: WindowManagerService;
@@ -45,88 +46,10 @@ class WindowManagerService {
     return { x, y };
   }
 
-  private getDefaultSize(appType: AppType): { width: number; height: number } {
-    switch (appType) {
-      case 'file-manager':
-        return { width: 500, height: 400 };
-      case 'text-viewer':
-        return { width: 550, height: 450 };
-      case 'image-viewer':
-        return { width: 600, height: 500 };
-      case 'about':
-        return { width: 400, height: 300 };
-      case 'clock':
-        return { width: 200, height: 240 };
-      case 'calculator':
-        return { width: 220, height: 320 };
-      case 'terminal':
-        return { width: 600, height: 400 };
-      case 'xeyes':
-        return { width: 220, height: 180 };
-      case 'browser':
-        return { width: 800, height: 600 };
-      default:
-        return { width: 400, height: 300 };
-    }
-  }
-
-  private getAppIcon(appType: AppType): string {
-    switch (appType) {
-      case 'file-manager':
-        return '📁';
-      case 'text-viewer':
-        return '📄';
-      case 'image-viewer':
-        return '🖼️';
-      case 'about':
-        return 'ℹ️';
-      case 'clock':
-        return '🕐';
-      case 'calculator':
-        return '🔢';
-      case 'terminal':
-        return '💻';
-      case 'xeyes':
-        return '👀';
-      case 'browser':
-        return '🌐';
-      default:
-        return '📋';
-    }
-  }
-
-  private getAppTitle(appType: AppType, appData?: Record<string, unknown>): string {
-    const name = appData?.name as string | undefined;
-    const path = appData?.path as string | undefined;
-    
-    switch (appType) {
-      case 'file-manager':
-        return `File Manager - ${path || '/'}`;
-      case 'text-viewer':
-        return name || 'Text Viewer';
-      case 'image-viewer':
-        return name || 'Image Viewer';
-      case 'about':
-        return 'About';
-      case 'clock':
-        return 'xclock';
-      case 'calculator':
-        return 'xcalc';
-      case 'terminal':
-        return 'xterm';
-      case 'xeyes':
-        return 'xeyes';
-      case 'browser':
-        return 'Web Browser';
-      default:
-        return 'Window';
-    }
-  }
-
   openWindow(appType: AppType, appData?: Record<string, unknown>): WindowState {
     const id = this.generateId();
     const position = this.getCascadePosition();
-    const size = this.getDefaultSize(appType);
+    const size = getDefaultSize(appType);
     
     // Get viewport dimensions
     const viewportWidth = globalThis.innerWidth;
@@ -147,8 +70,8 @@ class WindowManagerService {
     
     const windowState: WindowState = {
       id,
-      title: this.getAppTitle(appType, appData),
-      icon: this.getAppIcon(appType),
+      title: getAppTitle(appType, appData),
+      icon: getAppIcon(appType),
       x: Math.max(padding, constrainedX),
       y: Math.max(padding, constrainedY),
       width: constrainedWidth,

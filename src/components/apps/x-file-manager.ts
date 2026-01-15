@@ -3,6 +3,14 @@ import { customElement, property, state } from 'lit/decorators.js';
 import type { FileSystemNode } from '../../types/index.js';
 import { fileSystemService } from '../../services/file-system.js';
 import { windowManager } from '../../services/window-manager.js';
+import { openNode } from '../../services/file-opener.js';
+import { getNodeIcon } from '../../data/file-icons.js';
+import { 
+  appContainerStyles, 
+  toolbarStyles, 
+  statusBarStyles,
+  inputStyles 
+} from '../../styles/shared-styles.js';
 
 @customElement('x-file-manager')
 export class XFileManager extends LitElement {
@@ -14,119 +22,87 @@ export class XFileManager extends LitElement {
   @state() private history: string[] = ['/'];
   @state() private historyIndex = 0;
 
-  static styles = css`
-    :host {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      background: var(--x11-window-bg, #b4b4b4);
-      font-family: var(--x11-font-family, sans-serif);
-      font-size: var(--x11-font-size, 12px);
-    }
+  static styles = [
+    appContainerStyles,
+    toolbarStyles,
+    statusBarStyles,
+    inputStyles,
+    css`
+      :host {
+        overflow: hidden;
+      }
 
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      padding: 3px;
-      background: var(--x11-window-bg, #b4b4b4);
-      border-bottom: 1px solid var(--x11-border-dark, #6e6e6e);
-    }
+      .toolbar {
+        padding: 3px;
+      }
 
-    .toolbar-btn {
-      padding: 1px 6px;
-      background: var(--x11-window-bg, #b4b4b4);
-      border-style: solid;
-      border-width: 1px;
-      border-color: var(--x11-border-light, #dcdcdc) var(--x11-border-dark, #6e6e6e) var(--x11-border-dark, #6e6e6e) var(--x11-border-light, #dcdcdc);
-      cursor: pointer;
-      font-size: 11px;
-      font-family: inherit;
-    }
+      .path-bar {
+        flex: 1;
+        padding: 1px 4px;
+        background: var(--x11-input-bg, #ffffff);
+        border-style: solid;
+        border-width: 1px;
+        border-color: var(--x11-border-dark, #6e6e6e) var(--x11-border-light, #dcdcdc) var(--x11-border-light, #dcdcdc) var(--x11-border-dark, #6e6e6e);
+        font-family: var(--x11-font-mono, monospace);
+        font-size: 11px;
+      }
 
-    .toolbar-btn:active {
-      border-color: var(--x11-border-dark, #6e6e6e) var(--x11-border-light, #dcdcdc) var(--x11-border-light, #dcdcdc) var(--x11-border-dark, #6e6e6e);
-    }
+      .file-grid {
+        flex: 1;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+        gap: 4px;
+        padding: 8px;
+        overflow: auto;
+        background: var(--x11-input-bg, #ffffff);
+        align-content: start;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+      }
 
-    .toolbar-btn:disabled {
-      color: var(--x11-text-disabled, #6e6e6e);
-      cursor: default;
-    }
+      .file-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 4px 2px;
+        cursor: pointer;
+        text-align: center;
+      }
 
-    .path-bar {
-      flex: 1;
-      padding: 1px 4px;
-      background: var(--x11-input-bg, #ffffff);
-      border-style: solid;
-      border-width: 1px;
-      border-color: var(--x11-border-dark, #6e6e6e) var(--x11-border-light, #dcdcdc) var(--x11-border-light, #dcdcdc) var(--x11-border-dark, #6e6e6e);
-      font-family: var(--x11-font-mono, monospace);
-      font-size: 11px;
-    }
+      .file-item:hover {
+        background: #d4d4d4;
+      }
 
-    .file-grid {
-      flex: 1;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-      gap: 4px;
-      padding: 8px;
-      overflow: auto;
-      background: var(--x11-input-bg, #ffffff);
-      align-content: start;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-    }
+      .file-item.selected {
+        background: var(--x11-selection-bg, #4a6984);
+        color: var(--x11-selection-text, #ffffff);
+      }
 
-    .file-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 4px 2px;
-      cursor: pointer;
-      text-align: center;
-    }
+      .file-icon {
+        font-size: 28px;
+        margin-bottom: 2px;
+      }
 
-    .file-item:hover {
-      background: #d4d4d4;
-    }
+      .file-name {
+        font-size: 10px;
+        word-break: break-word;
+        max-width: 64px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        line-height: 1.2;
+      }
 
-    .file-item.selected {
-      background: var(--x11-selection-bg, #4a6984);
-      color: var(--x11-selection-text, #ffffff);
-    }
-
-    .file-icon {
-      font-size: 28px;
-      margin-bottom: 2px;
-    }
-
-    .file-name {
-      font-size: 10px;
-      word-break: break-word;
-      max-width: 64px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      line-height: 1.2;
-    }
-
-    .empty-folder {
-      grid-column: 1 / -1;
-      text-align: center;
-      color: var(--x11-text-disabled, #6e6e6e);
-      padding: 30px;
-    }
-
-    .status-bar {
-      padding: 2px 6px;
-      background: var(--x11-window-bg, #b4b4b4);
-      border-top: 1px solid var(--x11-border-light, #dcdcdc);
-      font-size: 10px;
-      color: var(--x11-text, #000000);
-    }
-  `;
+      .empty-folder {
+        grid-column: 1 / -1;
+        text-align: center;
+        color: var(--x11-text-disabled, #6e6e6e);
+        padding: 30px;
+      }
+    `
+  ];
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -191,35 +167,8 @@ export class XFileManager extends LitElement {
     if (item.type === 'folder') {
       this.navigateTo(item.path);
     } else {
-      this.openFile(item);
-    }
-  }
-
-  private openFile(node: FileSystemNode): void {
-    // Check if it's an app launcher
-    if (node.mimeType === 'application/x-app' && node.content) {
-      const appType = node.content as import('../../types/index.js').AppType;
-      windowManager.openWindow(appType, {});
-      return;
-    }
-
-    const fileType = fileSystemService.getFileType(node);
-
-    switch (fileType) {
-      case 'text':
-        windowManager.openWindow('text-viewer', {
-          path: node.path,
-          name: node.name,
-          content: node.content,
-        });
-        break;
-      case 'image':
-        windowManager.openWindow('image-viewer', {
-          path: node.path,
-          name: node.name,
-          src: node.content,
-        });
-        break;
+      // Use centralized file opener for all non-folder items
+      openNode(item);
     }
   }
 
@@ -228,22 +177,7 @@ export class XFileManager extends LitElement {
   }
 
   private getFileIcon(node: FileSystemNode): string {
-    if (node.icon) return node.icon;
-    if (node.type === 'folder') return '📁';
-    
-    const ext = node.name.split('.').pop()?.toLowerCase();
-    switch (ext) {
-      case 'txt':
-      case 'md':
-        return '📄';
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return '🖼️';
-      default:
-        return '📄';
-    }
+    return getNodeIcon(node);
   }
 
   render() {

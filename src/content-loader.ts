@@ -1,13 +1,19 @@
-// Content loader - imports all markdown and config files from content/
-// This is processed at build time by Vite
+/**
+ * Content Loader - Builds the virtual file system from content/ directory
+ * 
+ * This is processed at build time by Vite's import.meta.glob
+ */
 
 import type { FileSystemNode } from './types/index.js';
+import { getFileIcon, getFolderIcon } from './data/file-icons.js';
 
-// Import all content files from content directory
-const markdownFiles = import.meta.glob('/content/**/*.md', { eager: true, query: '?raw', import: 'default' });
-const textFiles = import.meta.glob('/content/**/*.txt', { eager: true, query: '?raw', import: 'default' });
-const jsonFiles = import.meta.glob('/content/**/*.json', { eager: true, import: 'default' });
-const shellFiles = import.meta.glob('/content/**/*.sh', { eager: true, query: '?raw', import: 'default' });
+// Import all content files from content directory using Vite's glob imports
+const contentFiles = {
+  markdown: import.meta.glob('/content/**/*.md', { eager: true, query: '?raw', import: 'default' }),
+  text: import.meta.glob('/content/**/*.txt', { eager: true, query: '?raw', import: 'default' }),
+  shell: import.meta.glob('/content/**/*.sh', { eager: true, query: '?raw', import: 'default' }),
+  json: import.meta.glob('/content/**/*.json', { eager: true, import: 'default' }),
+};
 
 interface AppConfig {
   id: string;
@@ -22,48 +28,21 @@ interface ImageConfig {
   url: string;
 }
 
-function getIconForFile(filename: string): string {
-  const ext = filename.split('.').pop()?.toLowerCase();
-  switch (ext) {
-    case 'md': return '📄';
-    case 'txt': return '📝';
-    case 'sh': return '📜';
-    case 'json': return '📋';
-    case 'jpg':
-    case 'jpeg':
-    case 'png':
-    case 'gif': return '🖼️';
-    default: return '📄';
-  }
-}
-
-function getIconForFolder(name: string): string {
-  const icons: Record<string, string> = {
-    'home': '🏠',
-    'projects': '💼',
-    'documents': '📂',
-    'images': '🖼️',
-    'music': '🎵',
-    'downloads': '📥',
-    'scripts': '📜',
-    'applications': '🚀',
-  };
-  return icons[name.toLowerCase()] || '📁';
-}
+/** Extension to MIME type mapping */
+const MIME_TYPES: Record<string, string> = {
+  md: 'text/markdown',
+  txt: 'text/plain',
+  sh: 'text/x-shellscript',
+  json: 'application/json',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+};
 
 function getMimeType(filename: string): string {
-  const ext = filename.split('.').pop()?.toLowerCase();
-  switch (ext) {
-    case 'md': return 'text/markdown';
-    case 'txt': return 'text/plain';
-    case 'sh': return 'text/x-shellscript';
-    case 'json': return 'application/json';
-    case 'jpg':
-    case 'jpeg': return 'image/jpeg';
-    case 'png': return 'image/png';
-    case 'gif': return 'image/gif';
-    default: return 'text/plain';
-  }
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  return MIME_TYPES[ext] || 'text/plain';
 }
 
 export function loadContentFileSystem(): FileSystemNode[] {
@@ -115,7 +94,7 @@ export function loadContentFileSystem(): FileSystemNode[] {
         type: 'folder',
         path: folderPath,
         parentId: parentId,
-        icon: folderPath === '/' ? '📁' : getIconForFolder(name),
+        icon: folderPath === '/' ? '📁' : getFolderIcon(name),
         createdAt: now,
         modifiedAt: now,
       });
@@ -125,27 +104,37 @@ export function loadContentFileSystem(): FileSystemNode[] {
   // Ensure root folder
   ensureFolder('/');
 
-  // Process markdown files
-  for (const [path, content] of Object.entries(markdownFiles)) {
-    const relativePath = path.replace('/content', '');
+  /**
+   * Process a raw text file (markdown, txt, shell scripts)
+   * Unified handler to eliminate code duplication
+   */
+  function processTextFile(
+    filePath: string, 
+    content: string, 
+    extPattern: RegExp,
+    idSuffix: string = ''
+  ): void {
+    const relativePath = filePath.replace('/content', '');
     const parts = relativePath.split('/').filter(Boolean);
     const filename = parts.pop()!;
-    const folderPath = parts.length > 0 ? '/' + parts.join('/') : '/';
-    const id = relativePath.replace(/\//g, '-').replace(/^-/, '').replace(/\.md$/, '');
     
-    // Skip hidden files
-    if (filename.startsWith('_')) continue;
+    // Skip hidden/config files
+    if (filename.startsWith('_')) return;
+
+    const folderPath = parts.length > 0 ? '/' + parts.join('/') : '/';
+    const id = relativePath.replace(/\//g, '-').replace(/^-/, '').replace(extPattern, '') + idSuffix;
+    const parentId = folderPath === '/' ? 'root' : parts.join('-');
 
     // Ensure parent folder exists
     ensureFolder(folderPath);
 
     // Add to parent's children
-    const parentId = folderPath === '/' ? 'root' : parts.join('-');
     if (!folderChildren.has(parentId)) {
       folderChildren.set(parentId, []);
     }
-    if (!folderChildren.get(parentId)!.includes(id)) {
-      folderChildren.get(parentId)!.push(id);
+    const children = folderChildren.get(parentId)!;
+    if (!children.includes(id)) {
+      children.push(id);
     }
 
     nodes.push({
@@ -154,84 +143,27 @@ export function loadContentFileSystem(): FileSystemNode[] {
       type: 'file',
       path: relativePath,
       parentId,
-      content: content as string,
+      content,
       mimeType: getMimeType(filename),
-      icon: getIconForFile(filename),
+      icon: getFileIcon(filename),
       createdAt: now,
       modifiedAt: now,
     });
   }
 
-  // Process text files
-  for (const [path, content] of Object.entries(textFiles)) {
-    const relativePath = path.replace('/content', '');
-    const parts = relativePath.split('/').filter(Boolean);
-    const filename = parts.pop()!;
-    const folderPath = parts.length > 0 ? '/' + parts.join('/') : '/';
-    const id = relativePath.replace(/\//g, '-').replace(/^-/, '').replace(/\.txt$/, '-txt');
-    
-    if (filename.startsWith('_')) continue;
-
-    ensureFolder(folderPath);
-
-    const parentId = folderPath === '/' ? 'root' : parts.join('-');
-    if (!folderChildren.has(parentId)) {
-      folderChildren.set(parentId, []);
-    }
-    if (!folderChildren.get(parentId)!.includes(id)) {
-      folderChildren.get(parentId)!.push(id);
-    }
-
-    nodes.push({
-      id,
-      name: filename,
-      type: 'file',
-      path: relativePath,
-      parentId,
-      content: content as string,
-      mimeType: getMimeType(filename),
-      icon: getIconForFile(filename),
-      createdAt: now,
-      modifiedAt: now,
-    });
+  // Process all text-based content files using the unified handler
+  for (const [path, content] of Object.entries(contentFiles.markdown)) {
+    processTextFile(path, content as string, /\.md$/, '');
   }
-
-  // Process shell files
-  for (const [path, content] of Object.entries(shellFiles)) {
-    const relativePath = path.replace('/content', '');
-    const parts = relativePath.split('/').filter(Boolean);
-    const filename = parts.pop()!;
-    const folderPath = parts.length > 0 ? '/' + parts.join('/') : '/';
-    const id = relativePath.replace(/\//g, '-').replace(/^-/, '').replace(/\.sh$/, '');
-    
-    if (filename.startsWith('_')) continue;
-
-    ensureFolder(folderPath);
-
-    const parentId = folderPath === '/' ? 'root' : parts.join('-');
-    if (!folderChildren.has(parentId)) {
-      folderChildren.set(parentId, []);
-    }
-    if (!folderChildren.get(parentId)!.includes(id)) {
-      folderChildren.get(parentId)!.push(id);
-    }
-
-    nodes.push({
-      id,
-      name: filename,
-      type: 'file',
-      path: relativePath,
-      parentId,
-      content: content as string,
-      mimeType: getMimeType(filename),
-      icon: getIconForFile(filename),
-      createdAt: now,
-      modifiedAt: now,
-    });
+  for (const [path, content] of Object.entries(contentFiles.text)) {
+    processTextFile(path, content as string, /\.txt$/, '-txt');
+  }
+  for (const [path, content] of Object.entries(contentFiles.shell)) {
+    processTextFile(path, content as string, /\.sh$/, '');
   }
 
   // Process JSON config files for special content (apps, images)
-  for (const [path, content] of Object.entries(jsonFiles)) {
+  for (const [path, content] of Object.entries(contentFiles.json)) {
     const relativePath = path.replace('/content', '');
     const parts = relativePath.split('/').filter(Boolean);
     const filename = parts.pop()!;

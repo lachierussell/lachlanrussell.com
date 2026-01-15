@@ -1,5 +1,11 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { 
+  appContainerStyles, 
+  toolbarStyles, 
+  statusBarStyles,
+  filenameLabelStyles 
+} from '../../styles/shared-styles.js';
 
 @customElement('x-image-viewer')
 export class XImageViewer extends LitElement {
@@ -13,99 +19,61 @@ export class XImageViewer extends LitElement {
   @state() private naturalWidth = 0;
   @state() private naturalHeight = 0;
 
-  static styles = css`
-    :host {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      background: var(--x11-window-bg, #b4b4b4);
-      font-family: var(--x11-font-family, sans-serif);
-      font-size: var(--x11-font-size, 12px);
-    }
+  static styles = [
+    appContainerStyles,
+    toolbarStyles,
+    statusBarStyles,
+    filenameLabelStyles,
+    css`
+      .toolbar {
+        gap: 6px;
+      }
 
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 6px;
-      background: var(--x11-window-bg, #b4b4b4);
-      border-bottom: 1px solid var(--x11-border-dark, #6e6e6e);
-      font-size: 11px;
-    }
+      .filename {
+        flex: 1;
+      }
 
-    .filename {
-      flex: 1;
-      font-weight: bold;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+      .image-container {
+        flex: 1;
+        overflow: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #404040;
+        margin: 2px;
+        border-style: solid;
+        border-width: 1px;
+        border-color: var(--x11-border-dark, #6e6e6e) var(--x11-border-light, #dcdcdc) var(--x11-border-light, #dcdcdc) var(--x11-border-dark, #6e6e6e);
+      }
 
-    .toolbar-btn {
-      padding: 1px 6px;
-      background: var(--x11-window-bg, #b4b4b4);
-      border-style: solid;
-      border-width: 1px;
-      border-color: var(--x11-border-light, #dcdcdc) var(--x11-border-dark, #6e6e6e) var(--x11-border-dark, #6e6e6e) var(--x11-border-light, #dcdcdc);
-      cursor: pointer;
-      font-size: 11px;
-      font-family: inherit;
-    }
+      .image-container.fit img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+      }
 
-    .toolbar-btn:active,
-    .toolbar-btn.active {
-      border-color: var(--x11-border-dark, #6e6e6e) var(--x11-border-light, #dcdcdc) var(--x11-border-light, #dcdcdc) var(--x11-border-dark, #6e6e6e);
-      background: #9a9a9a;
-    }
+      .image-container:not(.fit) {
+        align-items: flex-start;
+        justify-content: flex-start;
+      }
 
-    .image-container {
-      flex: 1;
-      overflow: auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #404040;
-      margin: 2px;
-      border-style: solid;
-      border-width: 1px;
-      border-color: var(--x11-border-dark, #6e6e6e) var(--x11-border-light, #dcdcdc) var(--x11-border-light, #dcdcdc) var(--x11-border-dark, #6e6e6e);
-    }
+      img {
+        display: block;
+      }
 
-    .image-container.fit img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
+      .loading,
+      .error {
+        color: #aaa;
+        font-size: 12px;
+        text-align: center;
+        padding: 30px;
+      }
 
-    .image-container:not(.fit) {
-      align-items: flex-start;
-      justify-content: flex-start;
-    }
-
-    img {
-      display: block;
-    }
-
-    .loading,
-    .error {
-      color: #aaa;
-      font-size: 12px;
-      text-align: center;
-      padding: 30px;
-    }
-
-    .error {
-      color: #ff8888;
-    }
-
-    .status-bar {
-      padding: 2px 6px;
-      background: var(--x11-window-bg, #b4b4b4);
-      border-top: 1px solid var(--x11-border-light, #dcdcdc);
-      font-size: 10px;
-      color: var(--x11-text, #000000);
-    }
-  `;
+      .error {
+        color: #ff8888;
+      }
+    `
+  ];
 
   private handleImageLoad(e: Event): void {
     const img = e.target as HTMLImageElement;

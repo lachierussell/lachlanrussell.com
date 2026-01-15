@@ -1,6 +1,6 @@
 import { Router } from '@thepassle/app-tools/router.js';
-import { windowManager } from './window-manager.js';
 import { fileSystemService } from './file-system.js';
+import { openNode } from './file-opener.js';
 
 export interface RouteContext {
   url: URL;
@@ -38,7 +38,7 @@ class RouterService {
           render: (context: RouteContext) => {
             this.currentRoute = context;
             const path = '/' + (this.stripBasePath(context.url.pathname).replace('/browse', '').replace(/^\//, '') || '');
-            this.openFileManager(path);
+            this.openPath(path);
             return context;
           },
         },
@@ -48,7 +48,7 @@ class RouterService {
           render: (context: RouteContext) => {
             this.currentRoute = context;
             const path = '/' + (this.stripBasePath(context.url.pathname).replace('/view', '').replace(/^\//, '') || '');
-            this.openFileViewer(path);
+            this.openPath(path);
             return context;
           },
         },
@@ -58,11 +58,6 @@ class RouterService {
           render: (context: RouteContext) => {
             this.currentRoute = context;
             const path = this.stripBasePath(context.url.pathname) || '/';
-            console.log('[Router] Catch-all route matched:', { 
-              pathname: context.url.pathname, 
-              strippedPath: path,
-              basePath: this.basePath 
-            });
             this.openPath(path);
             return context;
           },
@@ -89,62 +84,14 @@ class RouterService {
     return RouterService.instance;
   }
 
-  private openFileManager(path: string): void {
-    const node = fileSystemService.getNode(path);
-    if (node && node.type === 'folder') {
-      windowManager.openWindow('file-manager', { path, name: node.name });
-    } else {
-      // Default to root if path not found
-      windowManager.openWindow('file-manager', { path: '/', name: 'Root' });
-    }
-  }
-
-  private openFileViewer(path: string): void {
-    const node = fileSystemService.getNode(path);
-    if (!node) return;
-
-    const fileType = fileSystemService.getFileType(node);
-    
-    switch (fileType) {
-      case 'text':
-        windowManager.openWindow('text-viewer', {
-          path: node.path,
-          name: node.name,
-          content: node.content,
-        });
-        break;
-      case 'image':
-        windowManager.openWindow('image-viewer', {
-          path: node.path,
-          name: node.name,
-          src: node.content, // URL for images
-        });
-        break;
-      case 'folder':
-        this.openFileManager(path);
-        break;
-    }
-  }
-
+  /** Open a path using the centralized file opener service */
   private openPath(path: string): void {
     // Normalize path - remove trailing slashes except for root
     const normalizedPath = path === '/' ? '/' : path.replace(/\/$/, '');
     
-    console.log('[Router] openPath called:', { path, normalizedPath });
-    
     const node = fileSystemService.getNode(normalizedPath);
-    console.log('[Router] Node lookup result:', node ? { id: node.id, name: node.name, type: node.type } : 'NOT FOUND');
-    
-    if (!node) {
-      // Path not found - could show an error or just load desktop
-      console.warn(`Path not found: ${normalizedPath}`);
-      return;
-    }
-
-    if (node.type === 'folder') {
-      this.openFileManager(normalizedPath);
-    } else {
-      this.openFileViewer(normalizedPath);
+    if (node) {
+      openNode(node);
     }
   }
 

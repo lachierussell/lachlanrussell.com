@@ -1,8 +1,11 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state, query } from 'lit/decorators.js';
-import type { FileSystemNode } from '../../types/index.js';
+import type { FileSystemNode, AppType } from '../../types/index.js';
 import { fileSystemService } from '../../services/file-system.js';
 import { windowManager } from '../../services/window-manager.js';
+import { openNode, openNodeById } from '../../services/file-opener.js';
+import { getDesktopMenuItems, APP_REGISTRY } from '../../data/app-registry.js';
+import { getNodeIcon } from '../../data/file-icons.js';
 import './x-desktop-icon.js';
 import './x-taskbar.js';
 import '../window/x-window-container.js';
@@ -161,21 +164,16 @@ export class XDesktop extends LitElement {
     // Normalize path - remove trailing slashes except for root
     const normalizedPath = pathname === '/' ? '/' : pathname.replace(/\/$/, '');
     
-    console.log('[DeepLink] Checking path:', normalizedPath);
-    
     // Look up the node directly
     const node = fileSystemService.getNode(normalizedPath);
     
     if (!node) {
-      console.warn('[DeepLink] Path not found:', normalizedPath);
       return false;
     }
 
-    console.log('[DeepLink] Found node:', node.name, node.type);
-
     // Open the file/folder after a short delay to let the desktop initialize
     setTimeout(() => {
-      this.openNode(node);
+      openNode(node);
     }, 150);
     
     return true;
@@ -315,7 +313,7 @@ export class XDesktop extends LitElement {
         if (this.selectedIconId) {
           const node = fileSystemService.getNodeById(this.selectedIconId);
           if (node) {
-            this.openNode(node);
+            openNode(node);
           }
         }
         break;
@@ -442,19 +440,8 @@ export class XDesktop extends LitElement {
                            target.classList.contains('icons-area');
 
     if (isDesktopClick) {
-      // Desktop context menu - FVWM style with apps
-      this.contextMenuItems = [
-        { id: 'terminal', label: 'XTerm', icon: '💻' },
-        { id: 'file-manager', label: 'File Manager', icon: '📁' },
-        { id: 'browser', label: 'Web Browser', icon: '🌐' },
-        { id: 'separator-1', label: '', separator: true },
-        { id: 'clock', label: 'XClock', icon: '🕐' },
-        { id: 'calculator', label: 'XCalc', icon: '🔢' },
-        { id: 'xeyes', label: 'XEyes', icon: '👀' },
-        { id: 'separator-2', label: '', separator: true },
-        { id: 'refresh', label: 'Refresh', icon: '🔄' },
-        { id: 'about', label: 'About', icon: 'ℹ️' },
-      ];
+      // Desktop context menu - derived from app registry
+      this.contextMenuItems = getDesktopMenuItems();
     } else {
       // Check if clicking on an icon
       const iconEl = target.closest('x-desktop-icon');
@@ -463,19 +450,12 @@ export class XDesktop extends LitElement {
         this.selectedIconId = nodeId;
         const node = fileSystemService.getNodeById(nodeId);
         
-        if (node?.type === 'folder') {
-          this.contextMenuItems = [
-            { id: 'open', label: 'Open', icon: '📂' },
-            { id: 'separator-1', label: '', separator: true },
-            { id: 'properties', label: 'Properties', icon: '📋' },
-          ];
-        } else {
-          this.contextMenuItems = [
-            { id: 'open', label: 'Open', icon: '📄' },
-            { id: 'separator-1', label: '', separator: true },
-            { id: 'properties', label: 'Properties', icon: '📋' },
-          ];
-        }
+        const openIcon = node?.type === 'folder' ? '📂' : '📄';
+        this.contextMenuItems = [
+          { id: 'open', label: 'Open', icon: openIcon },
+          { id: 'separator-1', label: '', separator: true },
+          { id: 'properties', label: 'Properties', icon: '📋' },
+        ];
       } else {
         return; // Don't show menu for other elements
       }
@@ -487,28 +467,11 @@ export class XDesktop extends LitElement {
   private handleMenuSelect(e: CustomEvent): void {
     const { itemId } = e.detail;
     
+    // Handle special menu items
     switch (itemId) {
-      case 'file-manager':
-        windowManager.openWindow('file-manager', { path: '/', name: 'Root' });
-        break;
-      case 'terminal':
-        windowManager.openWindow('terminal', {});
-        break;
-      case 'clock':
-        windowManager.openWindow('clock', {});
-        break;
-      case 'calculator':
-        windowManager.openWindow('calculator', {});
-        break;
-      case 'xeyes':
-        windowManager.openWindow('xeyes', {});
-        break;
-      case 'browser':
-        windowManager.openWindow('browser', { url: 'https://en.wikipedia.org/wiki/Main_Page' });
-        break;
       case 'refresh':
         this.loadDesktopItems();
-        break;
+        return;
       case 'about':
         const aboutNode = fileSystemService.getNode('/about.txt');
         if (aboutNode) {
@@ -518,58 +481,31 @@ export class XDesktop extends LitElement {
             content: aboutNode.content,
           });
         }
-        break;
+        return;
       case 'open':
         if (this.selectedIconId) {
-          const node = fileSystemService.getNodeById(this.selectedIconId);
-          if (node) {
-            this.openNode(node);
-          }
+          openNodeById(this.selectedIconId);
         }
-        break;
+        return;
       case 'properties':
         // TODO: Implement properties dialog
-        break;
-    }
-  }
-
-  private openNode(node: FileSystemNode): void {
-    if (node.type === 'folder') {
-      windowManager.openWindow('file-manager', {
-        path: node.path,
-        name: node.name,
-      });
-    } else {
-      // Check if it's an app launcher
-      if (node.mimeType === 'application/x-app' && node.content) {
-        const appType = node.content as import('../../types/index.js').AppType;
-        windowManager.openWindow(appType, {});
         return;
+    }
+    
+    // Handle app launches from registry
+    if (itemId in APP_REGISTRY) {
+      const appType = itemId as AppType;
+      const defaultData: Record<string, unknown> = {};
+      
+      // Special default data for certain apps
+      if (appType === 'file-manager') {
+        defaultData.path = '/';
+        defaultData.name = 'Root';
+      } else if (appType === 'browser') {
+        defaultData.url = 'https://en.wikipedia.org/wiki/Main_Page';
       }
-
-      const fileType = fileSystemService.getFileType(node);
-      switch (fileType) {
-        case 'text':
-          windowManager.openWindow('text-viewer', {
-            path: node.path,
-            name: node.name,
-            content: node.content,
-          });
-          break;
-        case 'image':
-          windowManager.openWindow('image-viewer', {
-            path: node.path,
-            name: node.name,
-            src: node.content,
-          });
-          break;
-        default:
-          windowManager.openWindow('text-viewer', {
-            path: node.path,
-            name: node.name,
-            content: node.content || 'Unable to display this file type.',
-          });
-      }
+      
+      windowManager.openWindow(appType, defaultData);
     }
   }
 
@@ -588,62 +524,11 @@ export class XDesktop extends LitElement {
   }
 
   private handleIconDoubleClick(e: CustomEvent): void {
-    const { nodeId, type } = e.detail;
-    const node = fileSystemService.getNodeById(nodeId);
-    
-    if (!node) return;
-
-    if (type === 'folder') {
-      windowManager.openWindow('file-manager', {
-        path: node.path,
-        name: node.name,
-      });
-    } else {
-      const fileType = fileSystemService.getFileType(node);
-      
-      switch (fileType) {
-        case 'text':
-          windowManager.openWindow('text-viewer', {
-            path: node.path,
-            name: node.name,
-            content: node.content,
-          });
-          break;
-        case 'image':
-          windowManager.openWindow('image-viewer', {
-            path: node.path,
-            name: node.name,
-            src: node.content,
-          });
-          break;
-        default:
-          // Try to open as text
-          windowManager.openWindow('text-viewer', {
-            path: node.path,
-            name: node.name,
-            content: node.content || 'Unable to display this file type.',
-          });
-      }
-    }
+    openNodeById(e.detail.nodeId);
   }
 
   private getItemIcon(item: FileSystemNode): string {
-    if (item.icon) return item.icon;
-    if (item.type === 'folder') return '📁';
-    
-    const ext = item.name.split('.').pop()?.toLowerCase();
-    switch (ext) {
-      case 'txt':
-      case 'md':
-        return '📄';
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return '🖼️';
-      default:
-        return '📄';
-    }
+    return getNodeIcon(item);
   }
 
   render() {
