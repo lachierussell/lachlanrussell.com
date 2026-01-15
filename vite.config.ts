@@ -1,13 +1,19 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  // Set base path for GitHub Pages
-  // Change this to your repository name if deploying to https://<username>.github.io/<repo>/
-  // Leave as '/' if deploying to https://<username>.github.io/ (user/org site)
-  base: '/',
+  // Base path for GitHub Pages - repo name
+  base: '/lachlanrussell.com/',
   
   build: {
     outDir: 'dist',
     sourcemap: false,
+    // Ensure everything is bundled into a single JS file
+    rollupOptions: {
+      output: {
+        // Single JS bundle
+        manualChunks: undefined,
+        inlineDynamicImports: true,
+      },
+    },
   },
 });

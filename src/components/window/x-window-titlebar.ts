@@ -49,68 +49,45 @@ export class XWindowTitlebar extends LitElement {
       pointer-events: none;
     }
 
-    /* macOS-style window buttons */
+    /* Simple monochrome window buttons */
     .btn {
-      width: 12px;
-      height: 12px;
+      width: 14px;
+      height: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 50%;
-      border: none;
+      border: 1px solid var(--x11-border-dark, #606468);
+      border-radius: 2px;
+      background: var(--x11-window-bg, #c0c4cc);
       cursor: pointer;
       padding: 0;
       flex-shrink: 0;
-      position: relative;
-    }
-
-    .btn-close {
-      background: #ff5f57;
-    }
-
-    .btn-close:hover {
-      background: #ff3b30;
-    }
-
-    .btn-minimize {
-      background: #febc2e;
-    }
-
-    .btn-minimize:hover {
-      background: #f0a000;
-    }
-
-    .btn-maximize {
-      background: #28c840;
-    }
-
-    .btn-maximize:hover {
-      background: #20a035;
-    }
-
-    /* Show symbols on hover */
-    .btn::after {
-      content: '';
-      display: none;
-    }
-
-    .btn:hover::after {
-      display: block;
-      font-size: 9px;
+      font-size: 11px;
       font-weight: bold;
-      color: rgba(0, 0, 0, 0.5);
+      color: var(--x11-text, #000);
+      line-height: 1;
     }
 
-    .btn-close:hover::after {
+    .btn:hover {
+      background: var(--x11-border-light, #e0e4ec);
+    }
+
+    .btn:active {
+      background: var(--x11-border-dark, #606468);
+      color: #fff;
+    }
+
+    .btn-close::after {
       content: '×';
     }
 
-    .btn-minimize:hover::after {
+    .btn-minimize::after {
       content: '−';
     }
 
-    .btn-maximize:hover::after {
-      content: '+';
+    .btn-maximize::after {
+      content: '□';
+      font-size: 9px;
     }
   `;
 
