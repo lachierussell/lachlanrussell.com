@@ -1,0 +1,84 @@
+/* OpenBSD FVWM Theme Variables */
+:root {
+  /* 
+   * OpenBSD default FVWM color scheme
+   * Clean, minimal, functional appearance
+   */
+  
+  /* Desktop - OpenBSD uses a darker steel blue/gray */
+  --x11-bg: #607080;
+  --x11-root-pattern: #506070;
+  
+  /* Window chrome - lighter gray */
+  --x11-window-bg: #c0c4cc;
+  --x11-window-border: #000000;
+  
+  /* Titlebar - FVWM style - darker slate for active */
+  --x11-titlebar-active: #506070;
+  --x11-titlebar-inactive: #a0a4ac;
+  --x11-titlebar-text-active: #ffffff;
+  --x11-titlebar-text-inactive: #404040;
+  
+  /* FVWM uses simpler, flatter bevels */
+  --x11-border-light: #e0e4ec;
+  --x11-border-mid: #c0c4cc;
+  --x11-border-dark: #606468;
+  --x11-border-darker: #000000;
+  
+  /* Text Colors */
+  --x11-text: #000000;
+  --x11-text-disabled: #606468;
+  
+  /* Selection */
+  --x11-selection-bg: #506070;
+  --x11-selection-text: #ffffff;
+  
+  /* Input fields - cream/white */
+  --x11-input-bg: #fffff0;
+  --x11-input-border: #606468;
+  
+  /* Sizes - FVWM is compact */
+  --x11-titlebar-height: 18px;
+  --x11-border-width: 1px;
+  --x11-frame-width: 4px;
+  --x11-icon-size: 32px;
+  --x11-desktop-icon-width: 64px;
+  --x11-taskbar-height: 0px; /* FVWM doesn't have a taskbar by default */
+  --x11-button-size: 13px;
+  
+  /* Fonts - Classic X11 fixed/helvetica style */
+  --x11-font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+  --x11-font-mono: 'DejaVu Sans Mono', 'Liberation Mono', 'Courier New', monospace;
+  --x11-font-size: 12px;
+  --x11-title-font: 'Helvetica Neue', 'Helvetica', sans-serif;
+  
+  /* Spacing */
+  --x11-padding: 2px;
+  --x11-gap: 4px;
+  
+  /* OpenBSD colors */
+  --openbsd-yellow: #f2ca30;
+  --openbsd-orange: #e5a000;
+}
+
+/* Utility Classes for FVWM Look */
+.x11-raised {
+  border-style: solid;
+  border-width: 1px;
+  border-color: var(--x11-border-light) var(--x11-border-dark) var(--x11-border-dark) var(--x11-border-light);
+}
+
+.x11-sunken {
+  border-style: solid;
+  border-width: 1px;
+  border-color: var(--x11-border-dark) var(--x11-border-light) var(--x11-border-light) var(--x11-border-dark);
+}
+
+.x11-flat {
+  border: 1px solid var(--x11-border-darker);
+}
+
+.x11-frame {
+  border: var(--x11-frame-width) solid var(--x11-window-bg);
+  border-color: var(--x11-border-light) var(--x11-border-dark) var(--x11-border-dark) var(--x11-border-light);
+}
