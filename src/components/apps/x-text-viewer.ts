@@ -15,6 +15,7 @@ export class XTextViewer extends LitElement {
       background: var(--x11-window-bg, #b4b4b4);
       font-family: var(--x11-font-family, sans-serif);
       font-size: var(--x11-font-size, 12px);
+      overflow: hidden;
     }
 
     .toolbar {
@@ -24,6 +25,7 @@ export class XTextViewer extends LitElement {
       background: var(--x11-window-bg, #b4b4b4);
       border-bottom: 1px solid var(--x11-border-dark, #6e6e6e);
       font-size: 11px;
+      flex-shrink: 0;
     }
 
     .filename {
@@ -42,9 +44,9 @@ export class XTextViewer extends LitElement {
     }
 
     .content {
-      flex: 1;
+      flex: 1 1 0;
+      min-height: 0;
       overflow: auto;
-      padding: 8px;
       background: var(--x11-input-bg, #ffffff);
       border-style: solid;
       border-width: 1px;
@@ -62,6 +64,7 @@ export class XTextViewer extends LitElement {
       line-height: 1.4;
       color: var(--x11-text, #000000);
       margin: 0;
+      padding: 8px;
     }
 
     .status-bar {
@@ -70,6 +73,7 @@ export class XTextViewer extends LitElement {
       border-top: 1px solid var(--x11-border-light, #dcdcdc);
       font-size: 10px;
       color: var(--x11-text, #000000);
+      flex-shrink: 0;
     }
   `;
 

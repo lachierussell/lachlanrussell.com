@@ -64,8 +64,18 @@ export class XWindowContainer extends LitElement {
 
   private handleWindowResize(e: CustomEvent): void {
     const { windowId, width, height, x, y } = e.detail;
-    if (x !== undefined && y !== undefined) {
-      windowManager.moveWindow(windowId, x, y);
+    // Only move if x or y changed (resizing from north or west edges)
+    if (x !== undefined) {
+      const win = windowManager.getWindow(windowId);
+      if (win) {
+        windowManager.moveWindow(windowId, x, win.y);
+      }
+    }
+    if (y !== undefined) {
+      const win = windowManager.getWindow(windowId);
+      if (win) {
+        windowManager.moveWindow(windowId, win.x, y);
+      }
     }
     windowManager.resizeWindow(windowId, width, height);
   }

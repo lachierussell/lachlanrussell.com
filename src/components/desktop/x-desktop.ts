@@ -516,6 +516,13 @@ Enjoy exploring!`;
         name: node.name,
       });
     } else {
+      // Check if it's an app launcher
+      if (node.mimeType === 'application/x-app' && node.content) {
+        const appType = node.content as import('../../types/index.js').AppType;
+        windowManager.openWindow(appType, {});
+        return;
+      }
+
       const fileType = fileSystemService.getFileType(node);
       switch (fileType) {
         case 'text':

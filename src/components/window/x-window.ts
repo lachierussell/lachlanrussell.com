@@ -233,22 +233,26 @@ export class XWindow extends LitElement {
 
       let newWidth = this.resizeStartWidth;
       let newHeight = this.resizeStartHeight;
-      let newX = this.resizeStartWindowX;
-      let newY = this.resizeStartWindowY;
+      let newX: number | undefined = undefined;
+      let newY: number | undefined = undefined;
 
       const dir = this.resizeDirection;
 
+      // East edge: just expand width, keep position
       if (dir.includes('e')) {
         newWidth = Math.max(200, this.resizeStartWidth + deltaX);
       }
+      // West edge: expand width and move x
       if (dir.includes('w')) {
         const widthDelta = Math.min(deltaX, this.resizeStartWidth - 200);
         newWidth = this.resizeStartWidth - widthDelta;
         newX = this.resizeStartWindowX + widthDelta;
       }
+      // South edge: just expand height, keep position
       if (dir.includes('s')) {
         newHeight = Math.max(150, this.resizeStartHeight + deltaY);
       }
+      // North edge: expand height and move y
       if (dir.includes('n')) {
         const heightDelta = Math.min(deltaY, this.resizeStartHeight - 150);
         newHeight = this.resizeStartHeight - heightDelta;

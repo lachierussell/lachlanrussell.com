@@ -27,8 +27,50 @@ export function getInitialFileSystem(): FileSystemNode[] {
 
   // Root folder
   nodes.push(createNode('root', '/', 'folder', '/', null, {
-    children: ['home', 'projects', 'images', 'documents', 'music', 'downloads', 'scripts', 'about.txt'],
+    children: ['home', 'projects', 'images', 'documents', 'music', 'downloads', 'scripts', 'applications', 'about.txt'],
     icon: '📁',
+  }));
+
+  // === APPLICATIONS (special launcher folder) ===
+  nodes.push(createNode('applications', 'Applications', 'folder', '/applications', 'root', {
+    children: ['app-terminal', 'app-browser', 'app-files', 'app-clock', 'app-calc', 'app-eyes'],
+    icon: '🚀',
+  }));
+
+  nodes.push(createNode('app-terminal', 'Terminal.app', 'file', '/applications/Terminal.app', 'applications', {
+    content: 'xterm',
+    mimeType: 'application/x-app',
+    icon: '💻',
+  }));
+
+  nodes.push(createNode('app-browser', 'Browser.app', 'file', '/applications/Browser.app', 'applications', {
+    content: 'browser',
+    mimeType: 'application/x-app',
+    icon: '🌐',
+  }));
+
+  nodes.push(createNode('app-files', 'Files.app', 'file', '/applications/Files.app', 'applications', {
+    content: 'file-manager',
+    mimeType: 'application/x-app',
+    icon: '📁',
+  }));
+
+  nodes.push(createNode('app-clock', 'Clock.app', 'file', '/applications/Clock.app', 'applications', {
+    content: 'clock',
+    mimeType: 'application/x-app',
+    icon: '🕐',
+  }));
+
+  nodes.push(createNode('app-calc', 'Calculator.app', 'file', '/applications/Calculator.app', 'applications', {
+    content: 'calculator',
+    mimeType: 'application/x-app',
+    icon: '🔢',
+  }));
+
+  nodes.push(createNode('app-eyes', 'Eyes.app', 'file', '/applications/Eyes.app', 'applications', {
+    content: 'xeyes',
+    mimeType: 'application/x-app',
+    icon: '👀',
   }));
 
   // === HOME FOLDER ===
