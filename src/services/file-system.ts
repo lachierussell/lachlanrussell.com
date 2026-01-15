@@ -1,5 +1,5 @@
 import type { FileSystemNode, ViewerType } from '../types/index.js';
-import { getInitialFileSystem } from '../data/filesystem-data.js';
+import { loadContentFileSystem } from '../content-loader.js';
 
 class FileSystemService {
   private static instance: FileSystemService;
@@ -18,7 +18,7 @@ class FileSystemService {
   }
 
   private initialize(): void {
-    const initialNodes = getInitialFileSystem();
+    const initialNodes = loadContentFileSystem();
     for (const node of initialNodes) {
       this.nodes.set(node.id, node);
       this.pathIndex.set(node.path, node.id);

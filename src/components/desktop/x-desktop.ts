@@ -114,44 +114,12 @@ export class XDesktop extends LitElement {
         windowManager.moveWindow(eyesWindow.id, 50, 320);
       }
       
-      // Open README on startup
-      const readmeContent = `Welcome to lachlanrussell.com
-=============================
-
-This website emulates a classic Unix desktop environment
-inspired by OpenBSD and the FVWM window manager.
-
-GETTING STARTED
----------------
-• Right-click anywhere on the desktop to open the app menu
-• Double-click icons on the right to open files and folders
-• Drag window title bars to move windows
-• Drag window edges to resize windows
-
-AVAILABLE APPS
---------------
-• XTerm      - Terminal emulator (try 'help' command)
-• File Manager - Browse the virtual filesystem
-• Web Browser - Browse websites (some sites may not load)
-• XClock     - Clock showing Melbourne time
-• XCalc      - Calculator
-• XEyes      - Eyes that follow your cursor
-
-KEYBOARD SHORTCUTS
-------------------
-Alt+Tab     - Cycle through windows
-Alt+F4      - Close window
-Alt+M       - Minimize window
-Alt+X       - Maximize/restore window
-Ctrl+N      - New file manager
-Escape      - Close menu / deselect
-
-Enjoy exploring!`;
-
+      // Open README on startup - load from content system
+      const aboutNode = fileSystemService.getNode('/about.md');
       const readmeWindow = windowManager.openWindow('text-viewer', {
-        path: '/readme.txt',
-        name: 'README.txt',
-        content: readmeContent,
+        path: aboutNode?.path || '/about.md',
+        name: aboutNode?.name || 'about.md',
+        content: aboutNode?.content || 'Welcome! Right-click to open apps.',
       });
       
       if (isMobile) {
@@ -223,7 +191,17 @@ Enjoy exploring!`;
   };
 
   private loadDesktopItems(): void {
-    this.desktopItems = fileSystemService.getRootItems();
+    const items = fileSystemService.getRootItems();
+    
+    // Sort: folders first, then files, each group alphabetically
+    this.desktopItems = items.sort((a, b) => {
+      // Folders before files
+      if (a.type === 'folder' && b.type !== 'folder') return -1;
+      if (a.type !== 'folder' && b.type === 'folder') return 1;
+      // Alphabetically within each type
+      return a.name.localeCompare(b.name);
+    });
+    
     this.calculateIconPositions();
   }
 

@@ -1,5 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+import { marked } from 'marked';
 
 @customElement('x-text-viewer')
 export class XTextViewer extends LitElement {
@@ -67,6 +69,104 @@ export class XTextViewer extends LitElement {
       padding: 8px;
     }
 
+    /* Markdown content styles */
+    .markdown-content {
+      font-family: var(--x11-font-family, sans-serif);
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--x11-text, #000000);
+      padding: 12px;
+    }
+
+    .markdown-content h1 {
+      font-size: 1.5em;
+      margin: 0 0 0.5em 0;
+      padding-bottom: 0.3em;
+      border-bottom: 1px solid var(--x11-border-dark, #6e6e6e);
+    }
+
+    .markdown-content h2 {
+      font-size: 1.3em;
+      margin: 1em 0 0.5em 0;
+    }
+
+    .markdown-content h3 {
+      font-size: 1.1em;
+      margin: 1em 0 0.5em 0;
+    }
+
+    .markdown-content p {
+      margin: 0.5em 0;
+    }
+
+    .markdown-content ul, .markdown-content ol {
+      margin: 0.5em 0;
+      padding-left: 1.5em;
+    }
+
+    .markdown-content li {
+      margin: 0.25em 0;
+    }
+
+    .markdown-content code {
+      font-family: var(--x11-font-mono, monospace);
+      background: #e8e8e8;
+      padding: 0.1em 0.3em;
+      border-radius: 2px;
+      font-size: 0.9em;
+    }
+
+    .markdown-content pre {
+      background: #2a2a2a;
+      color: #f0f0f0;
+      padding: 10px;
+      border-radius: 3px;
+      overflow-x: auto;
+      margin: 0.5em 0;
+    }
+
+    .markdown-content pre code {
+      background: none;
+      padding: 0;
+      color: inherit;
+    }
+
+    .markdown-content a {
+      color: #0066cc;
+      text-decoration: none;
+    }
+
+    .markdown-content a:hover {
+      text-decoration: underline;
+    }
+
+    .markdown-content blockquote {
+      margin: 0.5em 0;
+      padding-left: 1em;
+      border-left: 3px solid var(--x11-border-dark, #6e6e6e);
+      color: #555;
+    }
+
+    .markdown-content hr {
+      border: none;
+      border-top: 1px solid var(--x11-border-dark, #6e6e6e);
+      margin: 1em 0;
+    }
+
+    .markdown-content table {
+      border-collapse: collapse;
+      margin: 0.5em 0;
+    }
+
+    .markdown-content th, .markdown-content td {
+      border: 1px solid var(--x11-border-dark, #6e6e6e);
+      padding: 0.3em 0.6em;
+    }
+
+    .markdown-content th {
+      background: #e8e8e8;
+    }
+
     .status-bar {
       padding: 2px 6px;
       background: var(--x11-window-bg, #b4b4b4);
@@ -81,11 +181,21 @@ export class XTextViewer extends LitElement {
     return this.content.split('\n').length;
   }
 
-  private getCharCount(): number {
-    return this.content.length;
+  private isMarkdown(): boolean {
+    return this.fileName.endsWith('.md') || this.filePath.endsWith('.md');
+  }
+
+  private renderMarkdown(): string {
+    try {
+      return marked(this.content) as string;
+    } catch {
+      return this.content;
+    }
   }
 
   render() {
+    const isMarkdown = this.isMarkdown();
+    
     return html`
       <div class="toolbar">
         <span class="filename">${this.fileName}</span>
@@ -93,11 +203,14 @@ export class XTextViewer extends LitElement {
       </div>
 
       <div class="content">
-        <pre class="text-content">${this.content}</pre>
+        ${isMarkdown 
+          ? html`<div class="markdown-content">${unsafeHTML(this.renderMarkdown())}</div>`
+          : html`<pre class="text-content">${this.content}</pre>`
+        }
       </div>
 
       <div class="status-bar">
-        ${this.getLineCount()} lines, ${this.getCharCount()} characters
+        ${isMarkdown ? 'Markdown' : 'Plain text'} • ${this.getLineCount()} lines
       </div>
     `;
   }
